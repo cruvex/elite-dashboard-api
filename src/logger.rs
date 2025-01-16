@@ -1,4 +1,5 @@
 use std::time::SystemTime;
+use log::LevelFilter;
 
 pub fn setup_logger() -> Result<(), fern::InitError> {
     fern::Dispatch::new()
@@ -10,7 +11,8 @@ pub fn setup_logger() -> Result<(), fern::InitError> {
                 message
             ))
         })
-        .level(log::LevelFilter::Trace)
+        .level(LevelFilter::Trace)
+        .level_for("axum", LevelFilter::Info)
         .chain(std::io::stdout())
         .apply()?;
 
