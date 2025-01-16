@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Authentication complete</title>
+    </head>
+    <style>
+        html {
+            background-color: #231d89;
+        }
+
+        .card {
+            font-family: 'gg sans', 'Noto Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            margin: 0 auto;
+            padding: 20px;
+            width: 300px;
+            text-align: center;
+            border-radius: 5px;
+            margin-top: 50px;
+            background-color: #313338;
+            color: #f2f3f5;
+        }
+    </style>
+    <body>
+        <script>
+            // If opened as a popup, this will close the window.
+            // Optionally notify the parent window with postMessage if needed.
+            if (window.opener) {
+                window.opener.postMessage({ type: "discordAuthComplete" }, "*");
+                window.close();
+            }
+            // If the window cannot be closed for whatever reason remove code from url bar
+            window.history.replaceState({}, document.title, '/auth/discord/callback');
+        </script>
+        <div class="card">
+            <p>You can close this window</p>
+        </div>
+    </body>
+</html>
