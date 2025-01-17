@@ -1,7 +1,7 @@
 use axum::http::StatusCode;
 use axum::Json;
 use axum::response::{IntoResponse, Response};
-use log::debug;
+use tracing::debug;
 use serde_json::json;
 
 pub type Result<T> = core::result::Result<T, Error>;

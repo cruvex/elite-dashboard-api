@@ -1,7 +1,11 @@
 use std::fmt::Error;
+use std::sync::Arc;
+use ::redis::aio::MultiplexedConnection;
+use ::redis::Client;
 use axum::Router;
 use axum::routing::get;
-use log::info;
+use redis_pool::RedisPool;
+use tracing::{debug, info};
 use crate::config::Config;
 use crate::logger::setup_logger;
 use crate::web::routes_auth;
@@ -10,16 +14,25 @@ mod logger;
 mod config;
 mod web;
 pub mod discord;
+mod redis;
+mod jwt;
+
 pub use discord::Discord;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     setup_logger().expect("Failed to setup logger");
 
+    // Load config
     let config = Config::from_env().expect("Failed to load configuration");
 
+    let redis = redis::init_redis(&config.redis);
+
+    let discord = Discord::new(&config.discord);
+
     let state = AppState {
-        config: config.clone()
+        discord,
+        redis: Arc::new(redis)
     };
 
     let routes_all = Router::new()
@@ -39,5 +52,6 @@ async fn main() -> Result<(), Error> {
 
 #[derive(Clone)]
 struct AppState {
-    config: Config
+    discord: Discord,
+    redis: Arc<RedisPool<Client, MultiplexedConnection>>
 }

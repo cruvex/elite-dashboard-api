@@ -7,6 +7,8 @@ pub struct Config {
     pub server: ServerConfig,
     pub database: DatabaseConfig,
     pub discord: DiscordConfig,
+    pub redis: RedisConfig,
+    pub jwt: JwtConfig
 }
 
 #[serde_inline_default]
@@ -29,11 +31,28 @@ pub struct DatabaseConfig {
 #[serde_inline_default]
 #[derive(Deserialize, Clone)]
 pub struct DiscordConfig {
+    pub api_version: String,
     pub redirect_url: String,
     pub client_id: String,
     pub client_secret: String,
     pub scopes: String,
+}
 
+#[serde_inline_default]
+#[derive(Deserialize, Clone)]
+pub struct RedisConfig {
+    pub url: String,
+}
+
+#[serde_inline_default]
+#[derive(Deserialize, Clone)]
+pub struct JwtConfig {
+    pub access_token_secret: String,
+    pub refresh_token_secret: String,
+    #[serde_inline_default(3600)]
+    pub access_token_exp: usize,
+    #[serde_inline_default(604800)]
+    pub refresh_token_exp: usize,
 }
 
 impl Config {
@@ -43,7 +62,9 @@ impl Config {
         let server = envy::prefixed("SERVER_").from_env::<ServerConfig>()?;
         let database = envy::prefixed("DATABASE_").from_env::<DatabaseConfig>()?;
         let discord = envy::prefixed("DISCORD_").from_env::<DiscordConfig>()?;
+        let redis = envy::prefixed("REDIS_").from_env::<RedisConfig>()?;
+        let jwt = envy::prefixed("JWT_").from_env::<JwtConfig>()?;
 
-        Ok(Config { server, database, discord })
+        Ok(Config { server, database, discord, redis, jwt })
     }
 }

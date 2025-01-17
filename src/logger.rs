@@ -1,20 +1,22 @@
-use std::time::SystemTime;
-use log::LevelFilter;
+use tracing_subscriber::{fmt, EnvFilter};
 
-pub fn setup_logger() -> Result<(), fern::InitError> {
-    fern::Dispatch::new()
-        .format(|out, message, record| {
-            out.finish(format_args!(
-                "[{}] {:5} - {}",
-                humantime::format_rfc3339_micros(SystemTime::now()),
-                record.level(),
-                message
-            ))
-        })
-        .level(LevelFilter::Trace)
-        .level_for("axum", LevelFilter::Info)
-        .chain(std::io::stdout())
-        .apply()?;
+pub fn setup_logger() -> Result<(), Box<dyn std::error::Error>> {
+    let format = fmt::format()
+        .with_timer(fmt::time::SystemTime::default())
+        .with_level(true)
+        .with_target(false)
+        .compact(); // Compact output
+
+    tracing_subscriber::fmt()
+        .event_format(format)
+        .with_env_filter(
+            EnvFilter::new("trace") // Global default log level
+                .add_directive("axum=info".parse()?) // Per-crate log level
+                .add_directive("reqwest=info".parse()?)
+                .add_directive("hyper_util=info".parse()?)
+        )
+        .with_writer(std::io::stdout)
+        .init();
 
     Ok(())
 }
