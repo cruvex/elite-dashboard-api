@@ -1,6 +1,8 @@
-pub mod routes_auth;
-mod error;
-mod handlers;
+pub mod middleware;
 
-pub use self::error::Result;
-pub use handlers::handlers_auth_discord;
+pub mod error;
+pub mod routes_auth;
+pub mod routes_auth_discord;
+
+pub const ACCESS_TOKEN_COOKIE: &str = "auth-token";
+pub const REFRESH_TOKEN_COOKIE: &str = "refresh-token";

@@ -1,57 +1,44 @@
-use std::fmt::Error;
-use std::sync::Arc;
-use ::redis::aio::MultiplexedConnection;
-use ::redis::Client;
-use axum::Router;
-use axum::routing::get;
-use redis_pool::RedisPool;
-use tracing::{debug, info};
-use crate::config::Config;
-use crate::logger::setup_logger;
-use crate::web::routes_auth;
-
-mod logger;
 mod config;
+mod error;
+mod model;
+mod service;
 mod web;
-pub mod discord;
-mod redis;
-mod jwt;
 
-pub use discord::Discord;
+use crate::config::AppConfig;
+use axum::routing::get;
+use axum::{middleware, Router};
+use tower_cookies::CookieManagerLayer;
+use tracing::info;
+use tracing_subscriber::EnvFilter;
+
+use crate::config::app::AppState;
 
 #[tokio::main]
-async fn main() -> Result<(), Error> {
-    setup_logger().expect("Failed to setup logger");
+async fn main() {
+    tracing_subscriber::fmt()
+        .with_target(false)
+        .with_env_filter(EnvFilter::from_default_env())
+        .init();
 
-    // Load config
-    let config = Config::from_env().expect("Failed to load configuration");
+    let config = AppConfig::from_env().expect("Failed to load configuration");
 
-    let redis = redis::init_redis(&config.redis);
-
-    let discord = Discord::new(&config.discord);
-
-    let state = AppState {
-        discord,
-        redis: Arc::new(redis)
-    };
+    let state = AppState::initialize(&config).await.expect("Failed to initialize app state");
 
     let routes_all = Router::new()
-        .merge(routes_auth::routes(state.clone()))
-        .route("/", get(|| async { "Hello, World!" }));
+        .merge(web::routes_auth::routes(state.clone()))
+        .merge(web::routes_auth_discord::routes(state.clone()))
+        .layer(middleware::map_response(web::middleware::mw_response_map::mw_response_map))
+        .layer(CookieManagerLayer::new())
+        .layer(middleware::from_fn(web::middleware::mw_req_stamp::mw_req_stamp_resolver))
+        .route("/health", get(|| async { "Hello, World!" }));
 
     let listener_url = format!("{}:{}", &config.server.address, &config.server.port);
 
     let listener = tokio::net::TcpListener::bind(&listener_url).await.unwrap();
+
     info!("{:<12} - {:?}\n", "LISTENING", listener.local_addr());
+
     axum::serve(listener, routes_all.into_make_service())
         .await
-        .unwrap();
-
-    Ok(())
-}
-
-#[derive(Clone)]
-struct AppState {
-    discord: Discord,
-    redis: Arc<RedisPool<Client, MultiplexedConnection>>
+        .expect("Failed to start server");
 }
