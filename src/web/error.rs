@@ -36,6 +36,7 @@ impl IntoResponse for Error {
     fn into_response(self) -> Response {
         debug!("{:<12} - {self:?}", "INTO_RES");
 
+        // Placeholder response
         let mut response = (StatusCode::INTERNAL_SERVER_ERROR, "UNHANDLED_CLIENT_ERROR").into_response();
 
         response.extensions_mut().insert(self);

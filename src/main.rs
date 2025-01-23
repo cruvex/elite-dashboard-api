@@ -27,6 +27,7 @@ async fn main() {
     let routes_all = Router::new()
         .merge(web::routes_auth::routes(state.clone()))
         .merge(web::routes_auth_discord::routes(state.clone()))
+        .merge(web::routes_discord_api::routes(state.clone()))
         .layer(middleware::map_response(web::middleware::mw_response_map::mw_response_map))
         .layer(CookieManagerLayer::new())
         .layer(middleware::from_fn(web::middleware::mw_req_stamp::mw_req_stamp_resolver))
