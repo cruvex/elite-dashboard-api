@@ -1,5 +1,7 @@
 pub mod app;
 
+use std::fmt::Error;
+use config::{Case, Config, Environment};
 use serde::Deserialize;
 use serde_inline_default::serde_inline_default;
 
@@ -59,19 +61,18 @@ pub struct JwtConfig {
 }
 
 impl AppConfig {
-    pub fn from_env() -> Result<Self, envy::Error> {
-        let server = envy::prefixed("SERVER_").from_env::<ServerConfig>()?;
-        let database = envy::prefixed("DATABASE_").from_env::<DatabaseConfig>()?;
-        let discord = envy::prefixed("DISCORD_").from_env::<DiscordConfig>()?;
-        let redis = envy::prefixed("REDIS_").from_env::<RedisConfig>()?;
-        let jwt = envy::prefixed("JWT_").from_env::<JwtConfig>()?;
+    pub fn from_env() -> Result<Self, Error> {
+        let config = Config::builder()
+            .add_source(
+                Environment::default()
+                    .separator("__")
+                    .convert_case(Case::Snake)
+            )
+            .build()
+            .expect("Failed to build config");
 
-        Ok(AppConfig {
-            server,
-            database,
-            discord,
-            redis,
-            jwt,
-        })
+        let config = config.try_deserialize::<AppConfig>().expect("Failed to deserialize config");
+
+        Ok(config)
     }
 }

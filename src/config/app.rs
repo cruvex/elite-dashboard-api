@@ -1,7 +1,6 @@
 use crate::config::AppConfig;
 use crate::error::Error;
 use axum_macros::FromRef;
-use redis_pool::{RedisPool, SingleRedisPool};
 //use sqlx::PgPool;
 use crate::service::{DiscordApiService, DiscordAuthService, JwtService};
 
