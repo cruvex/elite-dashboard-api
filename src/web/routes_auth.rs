@@ -17,7 +17,11 @@ pub fn routes(state: AppState) -> Router {
 pub async fn auth_refresh(cookies: Cookies, State(jwt): State<JwtService>) -> Result<impl IntoResponse, Error> {
     debug!("{:<12} - {}", "HANDLER", "auth_refresh");
 
-    let refresh_token = cookies.get(REFRESH_TOKEN_COOKIE).ok_or(Error::CookieNotFound)?.value().to_string();
+    let refresh_token = cookies
+        .get(REFRESH_TOKEN_COOKIE)
+        .ok_or(Error::CookieNotFound)?
+        .value()
+        .to_string();
 
     debug!("Refresh token: {}", refresh_token);
 

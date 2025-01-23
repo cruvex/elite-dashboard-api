@@ -37,7 +37,11 @@ pub struct DiscordCallbackQueryParams {
     code: Option<String>,
 }
 
-pub async fn callback(cookies: Cookies, State(state): State<AppState>, Query(params): Query<DiscordCallbackQueryParams>) -> Result<Html<String>> {
+pub async fn callback(
+    cookies: Cookies,
+    State(state): State<AppState>,
+    Query(params): Query<DiscordCallbackQueryParams>,
+) -> Result<Html<String>> {
     debug!("{:<12} - {}", "HANDLER", "auth_discord_callback");
 
     // Validate and extract the authorization code
@@ -50,7 +54,10 @@ pub async fn callback(cookies: Cookies, State(state): State<AppState>, Query(par
 
     let mut claims = Claims::new(&user_id);
 
-    let access_token = state.jwt.generate_access_token(&mut claims).map_err(|e| Error::JwtTokenGenerationError)?;
+    let access_token = state
+        .jwt
+        .generate_access_token(&mut claims)
+        .map_err(|e| Error::JwtTokenGenerationError)?;
     let mut access_token_cookie = Cookie::new(ACCESS_TOKEN_COOKIE, access_token);
     access_token_cookie.set_http_only(true);
     access_token_cookie.set_path("/");

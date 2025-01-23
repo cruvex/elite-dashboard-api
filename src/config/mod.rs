@@ -1,9 +1,9 @@
 pub mod app;
 
-use std::fmt::Error;
 use config::{Case, Config, Environment};
 use serde::Deserialize;
 use serde_inline_default::serde_inline_default;
+use std::fmt::Error;
 
 #[derive(Deserialize, Clone)]
 pub struct AppConfig {
@@ -63,11 +63,7 @@ pub struct JwtConfig {
 impl AppConfig {
     pub fn from_env() -> Result<Self, Error> {
         let config = Config::builder()
-            .add_source(
-                Environment::default()
-                    .separator("__")
-                    .convert_case(Case::Snake)
-            )
+            .add_source(Environment::default().separator("__").convert_case(Case::Snake))
             .build()
             .expect("Failed to build config");
 

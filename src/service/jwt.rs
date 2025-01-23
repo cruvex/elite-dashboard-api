@@ -62,8 +62,16 @@ impl JwtService {
     }
 
     /// method to generate a token with a specific expiration time and secret.
-    fn generate_token(&self, claims: &mut Claims, secret: &str, expiration: &usize) -> Result<String, jsonwebtoken::errors::Error> {
-        let now = SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_secs() as usize;
+    fn generate_token(
+        &self,
+        claims: &mut Claims,
+        secret: &str,
+        expiration: &usize,
+    ) -> Result<String, jsonwebtoken::errors::Error> {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards")
+            .as_secs() as usize;
 
         claims.iat = now; // Set issued-at time
         claims.exp = now + expiration; // Set expiration time
