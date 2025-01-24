@@ -47,20 +47,17 @@ impl DiscordApiService {
 
         // request.try_clone().map(|req| req.me)
         // response.status().
-            // response.
+        // response.
 
         if !response.status().is_success() {
             debug!("Failed to get response: {:?}", response);
             return Err(DiscordApiRequestError(response.status().to_string()));
         }
 
-        response
-            .json::<T>()
-            .await
-            .map_err(|e| {
-                debug!("Failed to deserialize response: {:?}", e);
-                DiscordApiRequestError(e.to_string())
-            })
+        response.json::<T>().await.map_err(|e| {
+            debug!("Failed to deserialize response: {:?}", e);
+            DiscordApiRequestError(e.to_string())
+        })
     }
 
     fn api_url_for(&self, path: &str) -> String {
