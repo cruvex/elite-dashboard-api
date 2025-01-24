@@ -56,7 +56,7 @@ pub async fn callback(
     let access_token = state
         .jwt
         .generate_access_token(&mut claims)
-        .map_err(|e| Error::JwtTokenGenerationError)?;
+        .map_err(|_e| Error::JwtTokenGenerationError)?;
     let mut access_token_cookie = Cookie::new(ACCESS_TOKEN_COOKIE, access_token);
     access_token_cookie.set_http_only(true);
     access_token_cookie.set_path("/");
@@ -65,7 +65,7 @@ pub async fn callback(
     let refresh_token = state
         .jwt
         .generate_refresh_token(&mut claims)
-        .map_err(|e| Error::JwtTokenGenerationError)?;
+        .map_err(|_e| Error::JwtTokenGenerationError)?;
     let mut refresh_token_cookie = Cookie::new(REFRESH_TOKEN_COOKIE, refresh_token);
     refresh_token_cookie.set_http_only(true);
     refresh_token_cookie.set_path("/auth/refresh");

@@ -11,7 +11,6 @@ use axum::{middleware, Router};
 use tower_cookies::CookieManagerLayer;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
-use web::{routes_auth, routes_discord_api};
 
 use crate::config::app::AppState;
 
