@@ -1,7 +1,10 @@
 use crate::config::JwtConfig;
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    fmt::Debug,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 #[derive(Clone)]
 pub struct JwtService {
@@ -9,6 +12,7 @@ pub struct JwtService {
     refresh_token_secret: String,
     access_token_exp: usize,
     refresh_token_exp: usize,
+    pub secure_cookie: bool,
 }
 
 impl JwtService {
@@ -18,6 +22,7 @@ impl JwtService {
             refresh_token_secret: config.refresh_token_secret.to_string(),
             access_token_exp: config.access_token_exp,
             refresh_token_exp: config.refresh_token_exp,
+            secure_cookie: config.secure_cookie,
         }
     }
 }
@@ -52,13 +57,18 @@ impl JwtService {
     }
 
     /// Validates and decodes an access token, returning the claims if valid.
-    pub fn validate_access_token(&self, token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
-        self.validate_token(token, &self.access_token_secret)
+    pub fn validate_access_token(&self, token: &str) -> Result<Claims, crate::web::error::Error> {
+        let mut validation = Validation::new(Algorithm::HS512);
+
+        self.validate_token(token, &self.access_token_secret, validation)
     }
 
     /// Validates and decodes a refresh token, returning the claims if valid.
-    pub fn validate_refresh_token(&self, token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
-        self.validate_token(token, &self.refresh_token_secret)
+    pub fn validate_refresh_token(&self, token: &str) -> Result<Claims, crate::web::error::Error> {
+        let mut validation = Validation::new(Algorithm::HS512);
+        validation.validate_exp = false;
+
+        self.validate_token(token, &self.refresh_token_secret, validation)
     }
 
     /// method to generate a token with a specific expiration time and secret.
@@ -86,11 +96,11 @@ impl JwtService {
     }
 
     /// method to validate and decode a token with a specific secret.
-    fn validate_token(&self, token: &str, secret: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
+    fn validate_token(&self, token: &str, secret: &str, validation: Validation) -> Result<Claims, crate::web::error::Error> {
         let decoding_key = DecodingKey::from_secret(secret.as_ref());
-        let validation = Validation::new(Algorithm::HS512);
 
-        let token_data = decode::<Claims>(token, &decoding_key, &validation)?;
+        let token_data = decode::<Claims>(token, &decoding_key, &validation)
+            .map_err(|_e| crate::web::error::Error::JwtTokenValidationError)?;
         Ok(token_data.claims)
     }
 }

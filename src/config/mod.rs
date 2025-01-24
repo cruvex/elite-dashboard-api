@@ -58,6 +58,7 @@ pub struct JwtConfig {
     pub access_token_exp: usize,
     #[serde_inline_default(604800)]
     pub refresh_token_exp: usize,
+    pub secure_cookie: bool,
 }
 
 impl AppConfig {
