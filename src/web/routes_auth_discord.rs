@@ -44,7 +44,6 @@ pub async fn callback(
 ) -> Result<Html<String>> {
     debug!("{:<12} - {}", "HANDLER", "auth_discord_callback");
 
-    // Validate and extract the authorization code
     let code = params.code.as_ref().ok_or_else(|| {
         debug!("No authorization code provided");
         Error::NoDiscordCodeInPath
@@ -75,6 +74,7 @@ pub async fn callback(
     cookies.add(access_token_cookie);
     cookies.add(refresh_token_cookie);
 
+    // TODO: Properly implement response html with error state
     // Return the appropriate HTML response
     render_callback_response().await
 }
