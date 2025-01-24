@@ -1,4 +1,5 @@
 mod config;
+mod ctx;
 mod error;
 mod model;
 mod service;
@@ -10,6 +11,7 @@ use axum::{middleware, Router};
 use tower_cookies::CookieManagerLayer;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
+use web::{routes_auth, routes_discord_api};
 
 use crate::config::app::AppState;
 
@@ -24,14 +26,22 @@ async fn main() {
 
     let state = AppState::initialize(&config).await.expect("Failed to initialize app state");
 
-    let routes_all = Router::new()
+    let routes_api = web::routes_discord_api::routes(state.clone()).layer(middleware::from_fn_with_state(
+        state.clone(),
+        web::middleware::mw_auth::mw_ctx_require,
+    ));
+
+    let routes_auth = Router::new()
         .merge(web::routes_auth::routes(state.clone()))
-        .merge(web::routes_auth_discord::routes(state.clone()))
-        .merge(web::routes_discord_api::routes(state.clone()))
+        .merge(web::routes_auth_discord::routes(state));
+
+    let routes_all = Router::new()
+        .nest("/api", routes_api)
+        .merge(routes_auth)
+        .route("/health", get(|| async { "Hello, World!" }))
         .layer(middleware::map_response(web::middleware::mw_response_map::mw_response_map))
         .layer(CookieManagerLayer::new())
-        .layer(middleware::from_fn(web::middleware::mw_req_stamp::mw_req_stamp_resolver))
-        .route("/health", get(|| async { "Hello, World!" }));
+        .layer(middleware::from_fn(web::middleware::mw_req_stamp::mw_req_stamp_resolver));
 
     let listener_url = format!("{}:{}", &config.server.address, &config.server.port);
 

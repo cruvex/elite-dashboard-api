@@ -1,6 +1,5 @@
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use std::sync::Arc;
 use tracing::debug;
 
 pub type Result<T> = core::result::Result<T, Error>;
@@ -23,10 +22,12 @@ pub enum Error {
 
     // Cookie related errors
     CookieParseError,
-    CookieNotFound,
+    AuthCookieNotFound,
+    RefreshCookieNotFound,
 
     // General request/response errors
     ReqStampNotInReqExt,
+    CtxNotinReqExt,
     InvalidRequest(String),
     UnauthorizedAccess,
     InternalServerError(String),
