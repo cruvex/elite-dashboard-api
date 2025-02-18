@@ -41,6 +41,7 @@ pub async fn auth_refresh(cookies: Cookies, State(jwt): State<JwtService>) -> Re
     access_token_cookie.set_http_only(true);
     access_token_cookie.set_path("/");
     access_token_cookie.set_same_site(SameSite::Strict);
+    access_token_cookie.set_secure(jwt.secure_cookie);
 
     let refresh_token =
         jwt
@@ -50,6 +51,7 @@ pub async fn auth_refresh(cookies: Cookies, State(jwt): State<JwtService>) -> Re
     refresh_token_cookie.set_http_only(true);
     refresh_token_cookie.set_path("/auth/refresh");
     refresh_token_cookie.set_same_site(SameSite::Strict);
+    refresh_token_cookie.set_secure(jwt.secure_cookie);
 
     cookies.add(access_token_cookie);
     cookies.add(refresh_token_cookie);

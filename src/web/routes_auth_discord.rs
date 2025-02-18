@@ -11,7 +11,7 @@ use tower_cookies::cookie::SameSite;
 use tower_cookies::{Cookie, Cookies};
 use tracing::debug;
 
-use crate::service::jwt::Claims;
+use crate::service::jwt::{self, Claims};
 use crate::web::error::{Error, Result};
 use crate::web::{ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE};
 use crate::AppState;
@@ -61,6 +61,7 @@ pub async fn callback(
     access_token_cookie.set_http_only(true);
     access_token_cookie.set_path("/");
     access_token_cookie.set_same_site(SameSite::Strict);
+    access_token_cookie.set_secure(state.jwt.secure_cookie);
 
     let refresh_token = state
         .jwt
@@ -70,6 +71,7 @@ pub async fn callback(
     refresh_token_cookie.set_http_only(true);
     refresh_token_cookie.set_path("/auth/refresh");
     refresh_token_cookie.set_same_site(SameSite::Strict);
+    refresh_token_cookie.set_secure(state.jwt.secure_cookie);
 
     cookies.add(access_token_cookie);
     cookies.add(refresh_token_cookie);
