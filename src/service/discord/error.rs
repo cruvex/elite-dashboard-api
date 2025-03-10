@@ -1,6 +1,6 @@
-use std::fmt::{Debug, Formatter, Display};
-use tracing::debug;
 use crate::app::error::AppError;
+use std::fmt::{Debug, Display, Formatter};
+use tracing::debug;
 
 #[derive(Clone, Debug)]
 pub enum Error {

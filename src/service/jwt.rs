@@ -1,5 +1,5 @@
 use crate::config::JwtConfig;
-use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::Debug,
@@ -72,16 +72,8 @@ impl JwtService {
     }
 
     /// method to generate a token with a specific expiration time and secret.
-    fn generate_token(
-        &self,
-        claims: &mut Claims,
-        secret: &str,
-        expiration: &usize,
-    ) -> Result<String, jsonwebtoken::errors::Error> {
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards")
-            .as_secs() as usize;
+    fn generate_token(&self, claims: &mut Claims, secret: &str, expiration: &usize) -> Result<String, jsonwebtoken::errors::Error> {
+        let now = SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_secs() as usize;
 
         claims.iat = now; // Set issued-at time
         claims.exp = now + expiration; // Set expiration time
@@ -99,8 +91,7 @@ impl JwtService {
     fn validate_token(&self, token: &str, secret: &str, validation: Validation) -> Result<Claims, crate::web::error::Error> {
         let decoding_key = DecodingKey::from_secret(secret.as_ref());
 
-        let token_data = decode::<Claims>(token, &decoding_key, &validation)
-            .map_err(|_e| crate::web::error::Error::JwtTokenValidationError)?;
+        let token_data = decode::<Claims>(token, &decoding_key, &validation).map_err(|_e| crate::web::error::Error::JwtTokenValidationError)?;
         Ok(token_data.claims)
     }
 }

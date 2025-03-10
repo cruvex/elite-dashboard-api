@@ -61,10 +61,8 @@ pub struct JwtConfig {
 
 impl AppConfig {
     pub fn from_env() -> Result<Self, Error> {
-        let config = Config::builder()
-            .add_source(Environment::default().separator("__").convert_case(Case::Snake))
-            .build()
-            .expect("Failed to build config");
+        let config =
+            Config::builder().add_source(Environment::default().separator("__").convert_case(Case::Snake)).build().expect("Failed to build config");
 
         let config = config.try_deserialize::<AppConfig>().expect("Failed to deserialize config");
 

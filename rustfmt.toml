@@ -1,1 +1,5 @@
-max_width = 125
+chain_width = 140
+max_width = 150
+reorder_imports = true
+reorder_modules = true
+use_field_init_shorthand = true

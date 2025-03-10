@@ -119,16 +119,15 @@ impl DiscordAuthService {
 
         debug!("Storing token information in Redis");
         let _: () = conn.hset_multiple(&user_key, &redis_operations).map_err(|e| {
-                debug!("Failed to store tokens: {:?}", e);
-                Error::RedisOperationError(e.to_string())
-            })?;
+            debug!("Failed to store tokens: {:?}", e);
+            Error::RedisOperationError(e.to_string())
+        })?;
 
         debug!("Setting token expiration");
-        let _: () = conn.hexpire(&user_key, token.expires_in - 5, ExpireOption::NONE, "access_token")
-            .map_err(|e| {
-                debug!("Failed to set expiration: {:?}", e);
-                Error::RedisOperationError(e.to_string())
-            })?;
+        let _: () = conn.hexpire(&user_key, token.expires_in - 5, ExpireOption::NONE, "access_token").map_err(|e| {
+            debug!("Failed to set expiration: {:?}", e);
+            Error::RedisOperationError(e.to_string())
+        })?;
 
         Ok(())
     }

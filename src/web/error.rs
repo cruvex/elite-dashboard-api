@@ -1,5 +1,5 @@
-use tracing::debug;
 use crate::app::error::AppError;
+use tracing::debug;
 
 #[derive(Debug, Clone)]
 pub enum Error {

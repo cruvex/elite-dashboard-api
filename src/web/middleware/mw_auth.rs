@@ -2,7 +2,7 @@ use axum::extract::FromRequestParts;
 use axum::{
     body::Body,
     extract::State,
-    http::{request::Parts, Request},
+    http::{Request, request::Parts},
     middleware::Next,
     response::Response,
 };
@@ -12,7 +12,7 @@ use tracing::debug;
 use crate::{
     ctx::Ctx,
     service::JwtService,
-    web::{error::Error, ACCESS_TOKEN_COOKIE},
+    web::{ACCESS_TOKEN_COOKIE, error::Error},
 };
 
 use crate::app::error::{AppError, Result};
@@ -26,11 +26,7 @@ pub async fn mw_ctx_require(
 ) -> Result<Response> {
     debug!("{:<12} - mw_ctx_require", "MIDDLEWARE");
 
-    let access_token = cookies
-        .get(ACCESS_TOKEN_COOKIE)
-        .ok_or(Error::RefreshCookieNotFound)?
-        .value()
-        .to_string();
+    let access_token = cookies.get(ACCESS_TOKEN_COOKIE).ok_or(Error::RefreshCookieNotFound)?.value().to_string();
 
     let claims = jwt.validate_access_token(&access_token)?;
 
