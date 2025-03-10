@@ -113,22 +113,23 @@ impl DiscordAuthService {
     }
 
     async fn store_token(&self, user_id: &str, token: &DiscordToken) -> Result<(), Error> {
-        let mut conn = &mut self.redis.get_connection().map_err(|e| Error::RedisConnectionError)?;
+        let mut conn = self.redis.get_connection().map_err(|_e| Error::RedisConnectionError)?;
         let user_key = format!("user:{}", user_id);
         let redis_operations = [("access_token", &token.access_token), ("refresh_token", &token.refresh_token)];
 
         debug!("Storing token information in Redis");
-        conn.hset_multiple(&user_key, &redis_operations).map_err(|e| {
-            debug!("Failed to store tokens: {:?}", e);
-            Error::RedisOperationError(e.to_string())
-        })?;
+        let _: () = conn.hset_multiple(&user_key, &redis_operations).map_err(|e| {
+                debug!("Failed to store tokens: {:?}", e);
+                Error::RedisOperationError(e.to_string())
+            })?;
 
         debug!("Setting token expiration");
-        conn.hexpire(&user_key, token.expires_in - 5, ExpireOption::NONE, "access_token")
+        let _: () = conn.hexpire(&user_key, token.expires_in - 5, ExpireOption::NONE, "access_token")
             .map_err(|e| {
                 debug!("Failed to set expiration: {:?}", e);
                 Error::RedisOperationError(e.to_string())
             })?;
+
         Ok(())
     }
 }
