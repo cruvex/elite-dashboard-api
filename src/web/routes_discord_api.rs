@@ -1,4 +1,4 @@
-use crate::config::app::{AppState, DiscordState};
+use crate::app::state::{AppState, DiscordState};
 use crate::web::error::Error;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
@@ -7,6 +7,7 @@ use axum::routing::get;
 use axum::{Json, Router};
 use serde_json::json;
 use tracing::debug;
+use crate::app::error::Result;
 
 pub fn routes(state: AppState) -> Router {
     Router::new()
@@ -15,7 +16,7 @@ pub fn routes(state: AppState) -> Router {
         .with_state(state)
 }
 
-pub async fn elite_guild(State(discord): State<DiscordState>) -> Result<impl IntoResponse, Error> {
+pub async fn elite_guild(State(discord): State<DiscordState>) -> Result<impl IntoResponse> {
     debug!("{:<12} - {}", "HANDLER", "discord_guild_elite");
 
     let guild = discord
@@ -29,7 +30,7 @@ pub async fn elite_guild(State(discord): State<DiscordState>) -> Result<impl Int
 pub async fn elite_member(
     State(discord): State<DiscordState>,
     Path(user_id): Path<String>,
-) -> Result<impl IntoResponse, Error> {
+) -> Result<impl IntoResponse> {
     debug!("{:<12} - {}", "HANDLER", "discord_guild_elite");
 
     let member = discord

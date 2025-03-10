@@ -11,12 +11,13 @@ use axum::Router;
 use tower_cookies::cookie::SameSite;
 use tower_cookies::{Cookie, Cookies};
 use tracing::debug;
+use crate::app::error::AppError;
 
 pub fn routes(state: AppState) -> Router {
     Router::new().route("/auth/refresh", post(auth_refresh)).with_state(state)
 }
 
-pub async fn auth_refresh(cookies: Cookies, State(jwt): State<JwtService>) -> Result<impl IntoResponse, Error> {
+pub async fn auth_refresh(cookies: Cookies, State(jwt): State<JwtService>) -> Result<impl IntoResponse, AppError> {
     debug!("{:<12} - {}", "HANDLER", "auth_refresh");
 
     debug!("Secure: {}", jwt.secure_cookie);

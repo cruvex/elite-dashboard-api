@@ -1,5 +1,3 @@
-pub mod app;
-
 use config::{Case, Config, Environment};
 use serde::Deserialize;
 use serde_inline_default::serde_inline_default;

@@ -1,8 +1,5 @@
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
 use tracing::debug;
-
-pub type Result<T> = core::result::Result<T, Error>;
+use crate::app::error::AppError;
 
 #[derive(Debug, Clone)]
 pub enum Error {
@@ -33,23 +30,27 @@ pub enum Error {
     InternalServerError(String),
 }
 
-impl IntoResponse for Error {
-    fn into_response(self) -> Response {
-        debug!("{:<12} - {self:?}", "INTO_RES");
+impl From<Error> for AppError {
+    fn from(value: Error) -> Self {
+        debug!("{:<12} - {value:?}", "FROM_APP_ERR");
 
-        // Placeholder response
-        let mut response = (StatusCode::INTERNAL_SERVER_ERROR, "UNHANDLED_CLIENT_ERROR").into_response();
-
-        response.extensions_mut().insert(self);
-
-        response
+        match value {
+            Error::NoDiscordCodeInPath => AppError::BadRequest,
+            Error::DiscordTokenError(_) => AppError::InternalServerError,
+            Error::DiscordApiError(_) => AppError::InternalServerError,
+            Error::JwtTokenGenerationError => AppError::InternalServerError,
+            Error::JwtTokenValidationError => AppError::Unauthorized,
+            Error::JwtTokenExpired => AppError::Unauthorized,
+            Error::RedisConnectionError => AppError::InternalServerError,
+            Error::RedisOperationError(_) => AppError::InternalServerError,
+            Error::CookieParseError => AppError::InternalServerError,
+            Error::AuthCookieNotFound => AppError::Unauthorized,
+            Error::RefreshCookieNotFound => AppError::Unauthorized,
+            Error::ReqStampNotInReqExt => AppError::InternalServerError,
+            Error::CtxNotinReqExt => AppError::InternalServerError,
+            Error::InvalidRequest(_) => AppError::BadRequest,
+            Error::UnauthorizedAccess => AppError::Unauthorized,
+            Error::InternalServerError(_) => AppError::InternalServerError,
+        }
     }
 }
-
-impl core::fmt::Display for Error {
-    fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::result::Result<(), core::fmt::Error> {
-        write!(fmt, "{self:?}")
-    }
-}
-
-impl std::error::Error for Error {}

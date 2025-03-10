@@ -9,5 +9,5 @@ pub use auth::*;
 pub use guild::Guild;
 pub use member::Member;
 pub use role::Role;
-pub use role_tag::RoleTag;
+// Unused for now pub use role_tag::RoleTag;
 pub use user::User;

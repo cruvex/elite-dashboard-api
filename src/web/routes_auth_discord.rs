@@ -11,8 +11,9 @@ use tower_cookies::cookie::SameSite;
 use tower_cookies::{Cookie, Cookies};
 use tracing::debug;
 
-use crate::service::jwt::{self, Claims};
-use crate::web::error::{Error, Result};
+use crate::service::jwt::Claims;
+use crate::web::error::{Error};
+use crate::app::error::Result;
 use crate::web::{ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE};
 use crate::AppState;
 

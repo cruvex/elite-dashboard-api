@@ -58,7 +58,7 @@ impl JwtService {
 
     /// Validates and decodes an access token, returning the claims if valid.
     pub fn validate_access_token(&self, token: &str) -> Result<Claims, crate::web::error::Error> {
-        let mut validation = Validation::new(Algorithm::HS512);
+        let validation = Validation::new(Algorithm::HS512);
 
         self.validate_token(token, &self.access_token_secret, validation)
     }

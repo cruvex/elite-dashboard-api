@@ -1,4 +1,3 @@
-use crate::web::error::Result;
 use axum::extract::FromRequestParts;
 use axum::{
     body::Body,
@@ -15,6 +14,8 @@ use crate::{
     service::JwtService,
     web::{error::Error, ACCESS_TOKEN_COOKIE},
 };
+
+use crate::app::error::{AppError, Result};
 
 pub async fn mw_ctx_require(
     //	ctx: Result<Ctx>,
@@ -41,11 +42,11 @@ pub async fn mw_ctx_require(
 }
 
 impl<S: Send + Sync> FromRequestParts<S> for Ctx {
-    type Rejection = Error;
+    type Rejection = AppError;
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self> {
         debug!("{:<12} - Ctx", "EXTRACTOR");
 
-        parts.extensions.get::<Ctx>().cloned().ok_or(Error::CtxNotinReqExt)
+        parts.extensions.get::<Ctx>().cloned().ok_or(Error::CtxNotinReqExt.into())
     }
 }

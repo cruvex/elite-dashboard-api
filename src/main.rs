@@ -4,6 +4,7 @@ mod error;
 mod model;
 mod service;
 mod web;
+mod app;
 
 use crate::config::AppConfig;
 use axum::routing::get;
@@ -12,7 +13,7 @@ use tower_cookies::CookieManagerLayer;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
-use crate::config::app::AppState;
+use crate::app::state::AppState;
 
 #[tokio::main]
 async fn main() {

@@ -1,4 +1,5 @@
-use crate::web::error::{Error, Result};
+use crate::web::error::{Error};
+use crate::app::error::{AppError, Result};
 use axum::body::Body;
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
@@ -27,11 +28,11 @@ pub async fn mw_req_stamp_resolver(mut req: Request<Body>, next: Next) -> Result
 }
 
 impl<S: Send + Sync> FromRequestParts<S> for ReqStamp {
-    type Rejection = Error;
+    type Rejection = AppError;
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self> {
         debug!("{:<12} - ReqStamp", "EXTRACTOR");
 
-        parts.extensions.get::<ReqStamp>().cloned().ok_or(Error::ReqStampNotInReqExt)
+        parts.extensions.get::<ReqStamp>().cloned().ok_or(Error::ReqStampNotInReqExt.into())
     }
 }
