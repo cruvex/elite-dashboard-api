@@ -1,7 +1,7 @@
 use crate::config::AppConfig;
 use crate::error::Error;
-use axum_macros::FromRef;
 use crate::service::{DiscordApiService, DiscordAuthService, JwtService};
+use axum_macros::FromRef;
 
 #[derive(Clone, FromRef)]
 pub struct AppState {
