@@ -1,12 +1,10 @@
 use crate::config::AppConfig;
 use crate::error::Error;
 use axum_macros::FromRef;
-//use sqlx::PgPool;
 use crate::service::{DiscordApiService, DiscordAuthService, JwtService};
 
 #[derive(Clone, FromRef)]
 pub struct AppState {
-    //pub db: PgPool,
     pub jwt: JwtService,
     pub discord: DiscordState,
 }
@@ -20,9 +18,6 @@ pub struct DiscordState {
 impl AppState {
     /// Initialize the application state with all required services.
     pub async fn initialize(config: &AppConfig) -> Result<Self, Error> {
-        // Database connection pool
-        // let db = PgPool::connect(&config.database.url).await?;
-
         let jwt = JwtService::new(&config.jwt);
 
         // Discord
