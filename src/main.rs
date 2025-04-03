@@ -36,7 +36,7 @@ async fn main() {
         .route("/health", get(|| async { "Hello, World!" }))
         .layer(middleware::map_response(web::middleware::mw_response_map::mw_response_map))
         .layer(CookieManagerLayer::new())
-        .layer(middleware::from_fn(web::middleware::mw_req_stamp::mw_req_stamp_resolver))
+        .layer(middleware::from_fn(web::middleware::mw_req_log::mw_req_log))
         .layer(CorsLayer::permissive());
 
     let listener_url = format!("{}:{}", &config.server.address, &config.server.port);

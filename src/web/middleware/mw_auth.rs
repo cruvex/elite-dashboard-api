@@ -7,7 +7,7 @@ use axum::{
     response::Response,
 };
 use tower_cookies::Cookies;
-use tracing::debug;
+use tracing::{debug, trace};
 
 use crate::{
     ctx::Ctx,
@@ -24,7 +24,7 @@ pub async fn mw_ctx_require(
     mut req: Request<Body>,
     next: Next,
 ) -> Result<Response> {
-    debug!("{:<12} - mw_ctx_require", "MIDDLEWARE");
+    trace!("{:<12} - mw_ctx_require", "MIDDLEWARE");
 
     let access_token = cookies.get(ACCESS_TOKEN_COOKIE).ok_or(Error::RefreshCookieNotFound)?.value().to_string();
 
