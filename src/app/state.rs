@@ -1,3 +1,4 @@
+use axum::extract::FromRef;
 use crate::config::AppConfig;
 use crate::error::Error;
 use crate::service::{DiscordApiService, DiscordAuthService, JwtService};
@@ -9,10 +10,16 @@ pub struct AppState {
     pub discord: DiscordState,
 }
 
-#[derive(Clone)]
+#[derive(Clone, FromRef)]
 pub struct DiscordState {
     pub api: DiscordApiService,
     pub auth: DiscordAuthService,
+}
+
+impl FromRef<AppState> for DiscordAuthService {
+    fn from_ref(state: &AppState) -> Self {
+        state.discord.auth.clone()
+    }
 }
 
 impl AppState {

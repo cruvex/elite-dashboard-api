@@ -13,6 +13,7 @@ use tracing::debug;
 
 use crate::AppState;
 use crate::app::error::Result;
+use crate::service::DiscordAuthService;
 use crate::service::jwt::Claims;
 use crate::web::error::Error;
 use crate::web::{ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE};
@@ -21,10 +22,10 @@ pub fn routes(state: AppState) -> Router {
     Router::new().route("/auth/discord/oauth-url", get(oauth_url)).route("/auth/discord/callback", get(callback)).with_state(state)
 }
 
-pub async fn oauth_url(State(state): State<AppState>) -> Result<Json<Value>> {
+pub async fn oauth_url(State(discord_auth): State<DiscordAuthService>) -> Result<Json<Value>> {
     debug!("{:<12} - {}", "HANDLER", "auth_discord_oauth_url");
     Ok(Json(json!({
-        "url": state.discord.auth.get_oauth_url()
+        "url": discord_auth.get_oauth_url()
     })))
 }
 
