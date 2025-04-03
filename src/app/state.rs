@@ -1,7 +1,7 @@
-use axum::extract::FromRef;
 use crate::config::AppConfig;
 use crate::error::Error;
 use crate::service::{DiscordApiService, DiscordAuthService, JwtService};
+use axum::extract::FromRef;
 use axum_macros::FromRef;
 
 #[derive(Clone, FromRef)]
