@@ -14,6 +14,7 @@ use tracing::debug;
 
 use crate::AppState;
 use crate::app::error::Result;
+use crate::service::DiscordAuthService;
 use crate::service::jwt::Claims;
 use crate::web::error::Error;
 use crate::web::{ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE};
@@ -22,9 +23,9 @@ pub fn routes(state: AppState) -> Router {
     Router::new().route("/auth/discord", get(auth_discord)).route("/auth/discord/callback", get(auth_discord_callback)).with_state(state)
 }
 
-pub async fn auth_discord(State(state): State<AppState>) -> Result<Json<Value>> {
+pub async fn auth_discord(State(discord_auth): State<DiscordAuthService>) -> Result<Json<Value>> {
     debug!("{:<12} - {}", "HANDLER", "auth_discord");
-    let (auth_url, csrf_token) = state.discord.auth.init_auth();
+    let (auth_url, csrf_token) = discord_auth.init_auth();
 
     Ok(Json(json!({
         "url": auth_url
