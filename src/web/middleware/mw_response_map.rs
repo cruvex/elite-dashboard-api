@@ -15,8 +15,8 @@ pub async fn mw_response_map(res: Response) -> Response {
 
     if let Some(err) = web_error {
         let response = match err {
-            Error::RefreshCookieNotFound | Error::AuthCookieNotFound => (StatusCode::UNAUTHORIZED, ""),
-            Error::NoDiscordCodeInPath => (StatusCode::BAD_REQUEST, ""),
+            Error::SessionCookieNotFound => (StatusCode::UNAUTHORIZED, ""),
+            Error::NoCodeInDiscordCallbackPath | Error::NoStateInDiscordCallbackPath => (StatusCode::BAD_REQUEST, ""),
             _ => (StatusCode::INTERNAL_SERVER_ERROR, ""),
         };
         return response.into_response();

@@ -4,7 +4,8 @@ use tracing::debug;
 #[derive(Debug, Clone)]
 pub enum Error {
     // Auth/Discord related errors
-    NoDiscordCodeInPath,
+    NoCodeInDiscordCallbackPath,
+    NoStateInDiscordCallbackPath,
     DiscordTokenError(String),
     DiscordApiError(String),
 
@@ -28,6 +29,8 @@ pub enum Error {
     InvalidRequest(String),
     UnauthorizedAccess,
     InternalServerError(String),
+    SessionCookieNotFound,
+    NoSessionFound,
 }
 
 impl From<Error> for AppError {
@@ -35,7 +38,8 @@ impl From<Error> for AppError {
         debug!("{:<12} - {value:?}", "FROM_APP_ERR");
 
         match value {
-            Error::NoDiscordCodeInPath => AppError::BadRequest,
+            Error::NoCodeInDiscordCallbackPath => AppError::BadRequest,
+            Error::NoStateInDiscordCallbackPath => AppError::BadRequest,
             Error::DiscordTokenError(_) => AppError::InternalServerError,
             Error::DiscordApiError(_) => AppError::InternalServerError,
             Error::JwtTokenGenerationError => AppError::InternalServerError,
@@ -51,6 +55,8 @@ impl From<Error> for AppError {
             Error::InvalidRequest(_) => AppError::BadRequest,
             Error::UnauthorizedAccess => AppError::Unauthorized,
             Error::InternalServerError(_) => AppError::InternalServerError,
+            Error::SessionCookieNotFound => AppError::Unauthorized,
+            Error::NoSessionFound => AppError::Unauthorized,
         }
     }
 }

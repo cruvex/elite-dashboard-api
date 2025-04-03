@@ -2,7 +2,7 @@ use axum::extract::{Query, State};
 use axum::response::Html;
 use axum::routing::get;
 use axum::{Json, Router};
-use oauth2::{CsrfToken, Scope};
+use oauth2::{AuthorizationCode, CsrfToken, Scope};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use serde_with::NoneAsEmptyString;
@@ -14,8 +14,8 @@ use tracing::debug;
 
 use crate::AppState;
 use crate::app::error::Result;
-use crate::service::DiscordAuthService;
 use crate::service::jwt::Claims;
+use crate::service::{DiscordAuthService, SessionService};
 use crate::web::error::Error;
 use crate::web::{ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE};
 
@@ -23,10 +23,27 @@ pub fn routes(state: AppState) -> Router {
     Router::new().route("/auth/discord", get(auth_discord)).route("/auth/discord/callback", get(auth_discord_callback)).with_state(state)
 }
 
-pub async fn auth_discord(State(discord_auth): State<DiscordAuthService>) -> Result<Json<Value>> {
+pub async fn auth_discord(
+    State(discord_auth): State<DiscordAuthService>,
+    State(session): State<SessionService>,
+    cookies: Cookies,
+) -> Result<Json<Value>> {
     debug!("{:<12} - {}", "HANDLER", "auth_discord");
     let (auth_url, csrf_token) = discord_auth.init_auth();
 
+    let session_id = session.init_session(&csrf_token).await;
+    debug!("{:<12} - Created session: {:?}", "HANDLER", session_id);
+
+    // Create and set session cookie
+    let mut session_cookie = Cookie::new("SESSION", session_id);
+    session_cookie.set_http_only(true);
+    session_cookie.set_path("/");
+    session_cookie.set_same_site(SameSite::Lax);
+    session_cookie.set_secure(session.secure_cookie);
+
+    cookies.add(session_cookie);
+
+    // csrf_token is set in 'state' query parameter
     Ok(Json(json!({
         "url": auth_url
     })))
@@ -37,19 +54,38 @@ pub async fn auth_discord(State(discord_auth): State<DiscordAuthService>) -> Res
 pub struct DiscordCallbackQueryParams {
     #[serde_as(as = "NoneAsEmptyString")]
     code: Option<String>,
+    #[serde_as(as = "NoneAsEmptyString")]
+    state: Option<String>,
 }
 
 pub async fn auth_discord_callback(
     cookies: Cookies,
-    State(state): State<AppState>,
+    State(session): State<SessionService>,
+    State(discord_auth): State<DiscordAuthService>,
     Query(params): Query<DiscordCallbackQueryParams>,
 ) -> Result<Html<String>> {
     debug!("{:<12} - {}", "HANDLER", "auth_discord_callback");
 
-    let code = params.code.as_ref().ok_or_else(|| {
-        debug!("No authorization code provided");
-        Error::NoDiscordCodeInPath
-    })?;
+    // code and state are required in callback
+    let code = params.code.ok_or(Error::NoCodeInDiscordCallbackPath)?;
+    let state = params.state.ok_or(Error::NoStateInDiscordCallbackPath)?;
+
+    let session_id = cookies.get("SESSION");
+    let session_id = session_id.ok_or(Error::SessionCookieNotFound)?.value().to_string();
+
+    debug!("{:<12} - Session ID: {:?}", "HANDLER", session_id);
+
+    // Check valid session by session_id and state (csrf_token)
+    let valid_session = session.validate_session(&session_id, CsrfToken::new(state.clone())).await?;
+
+    match valid_session {
+        true => debug!("{:<12} - Valid session", "HANDLER"),
+        false => debug!("{:<12} - Invalid session", "HANDLER"),
+    }
+
+    let tokens = discord_auth.exchanged_code_for_tokens(&code).await?;
+
+    debug!("{:<12} - {:?}", "HANDLER", tokens);
 
     // let user_id = state.discord.auth.authenticate(code).await?;
     //

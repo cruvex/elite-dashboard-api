@@ -1,6 +1,7 @@
 mod app;
 mod config;
 mod ctx;
+mod db;
 mod error;
 mod model;
 mod service;

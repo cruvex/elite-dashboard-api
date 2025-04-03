@@ -1,9 +1,12 @@
+use crate::app::error::AppError;
 use crate::config::{DiscordConfig, RedisConfig};
 use crate::model::discord::{DiscordAuthorizationCodeRequest, DiscordRefreshTokenRequest, DiscordToken, User};
 use crate::web::error::Error;
 use oauth2::basic::{BasicClient, BasicErrorResponse, BasicRevocationErrorResponse, BasicTokenIntrospectionResponse, BasicTokenResponse};
 use oauth2::url::Url;
-use oauth2::{AuthUrl, ClientId, ClientSecret, CsrfToken, EndpointNotSet, EndpointSet, RedirectUrl, Scope, StandardRevocableToken, TokenUrl};
+use oauth2::{
+    AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, EndpointNotSet, EndpointSet, RedirectUrl, Scope, StandardRevocableToken, TokenUrl,
+};
 use redis::{Commands, ExpireOption, ToRedisArgs};
 use redis_pool::{RedisPool, SingleRedisPool};
 use reqwest::Client;
@@ -29,14 +32,10 @@ pub struct DiscordAuthService {
         EndpointSet,
     >,
     pub scopes: String,
-    redis: SingleRedisPool,
 }
 
 impl DiscordAuthService {
-    pub fn new(discord_config: &DiscordConfig, redis_config: &RedisConfig) -> Self {
-        let redis = redis::Client::open(redis_config.url.to_string()).expect("Failed to create Redis client");
-        let redis_pool = RedisPool::from(redis);
-
+    pub fn new(discord_config: &DiscordConfig) -> Self {
         let discord_oauth_url = "https://discord.com/oauth2/authorize".to_string();
         let discord_token_url = format!("https://discord.com/api/v{}/oauth2/token", &discord_config.api_version);
 
@@ -56,12 +55,22 @@ impl DiscordAuthService {
             http_client,
             oauth_client,
             scopes: discord_config.scopes.to_string(),
-            redis: redis_pool,
         }
     }
 
     pub fn init_auth(&self) -> (Url, CsrfToken) {
         self.oauth_client.authorize_url(CsrfToken::new_random).add_scope(Scope::new(self.scopes.clone())).url()
+    }
+
+    pub async fn exchanged_code_for_tokens(&self, code: &str) -> Result<BasicTokenResponse, AppError> {
+        let token = self
+            .oauth_client
+            .exchange_code(AuthorizationCode::new(code.to_string()))
+            .request_async(&self.http_client)
+            .await
+            .map_err(|e| Error::DiscordTokenError(e.to_string()))?;
+
+        Ok(token)
     }
 
     // pub async fn authenticate(&self, code: &str) -> Result<String, Error> {
