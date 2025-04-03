@@ -11,9 +11,6 @@ pub async fn mw_response_map(res: Response) -> Response {
     let web_error = res.extensions().get::<Error>();
     debug!("{:<12} - web_error: {:?}", "RES_MAPPER", web_error);
 
-
-
-
     // TODO: Implement proper response mapping
 
     if let Some(err) = web_error {
