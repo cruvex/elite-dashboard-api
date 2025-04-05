@@ -10,7 +10,10 @@ use serde_json::json;
 use tracing::debug;
 
 pub fn routes(state: AppState) -> Router {
-    Router::new().route("/discord/guild/elite", get(elite_guild)).route("/discord/elite/member/{user_id}", get(elite_member)).with_state(state)
+    Router::new()
+        .route("/discord/guild/elite", get(elite_guild))
+        .route("/discord/elite/member/{user_id}", get(elite_member))
+        .with_state(state)
 }
 
 pub async fn elite_guild(State(discord): State<DiscordState>) -> Result<impl IntoResponse> {
@@ -21,7 +24,7 @@ pub async fn elite_guild(State(discord): State<DiscordState>) -> Result<impl Int
 }
 
 pub async fn elite_member(State(discord): State<DiscordState>, Path(user_id): Path<String>) -> Result<impl IntoResponse> {
-    debug!("{:<12} - {}", "HANDLER", "discord_guild_elite");
+    debug!("{:<12} - {}", "HANDLER", "discord_member_elite");
 
     let member = discord.api.get_elite_guild_member(&user_id).await.map_err(|e| Error::DiscordApiError(e.to_string()))?;
 

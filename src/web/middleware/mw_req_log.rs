@@ -1,8 +1,5 @@
-use crate::app::error::{AppError, Result};
-use crate::web::error::Error;
+use crate::app::error::Result;
 use axum::body::Body;
-use axum::extract::FromRequestParts;
-use axum::http::request::Parts;
 use axum::http::{Method, Request, Uri};
 use axum::middleware::Next;
 use axum::response::Response;
@@ -18,7 +15,7 @@ pub struct ReqStamp {
     pub time_in: OffsetDateTime,
 }
 
-pub async fn mw_req_log(uri: Uri, req_method: Method, mut req: Request<Body>, next: Next) -> Result<Response> {
+pub async fn mw_req_log(uri: Uri, req_method: Method, req: Request<Body>, next: Next) -> Result<Response> {
     trace!("{:<12} - mw_req_log", "MIDDLEWARE");
 
     let time_in = OffsetDateTime::now_utc();

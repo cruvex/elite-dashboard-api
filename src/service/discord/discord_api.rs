@@ -39,8 +39,11 @@ impl DiscordApiService {
     }
 
     async fn request<T: DeserializeOwned>(&self, request: RequestBuilder) -> Result<T, Error> {
-        let response =
-            request.header("Authorization", format!("Bot {}", self.bot_token)).send().await.map_err(|e| DiscordApiRequestError(e.to_string()))?;
+        let response = request
+            .header("Authorization", format!("Bot {}", self.bot_token))
+            .send()
+            .await
+            .map_err(|e| DiscordApiRequestError(e.to_string()))?;
 
         // request.try_clone().map(|req| req.me)
         // response.status().
