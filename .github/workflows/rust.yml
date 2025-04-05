@@ -20,7 +20,7 @@ jobs:
       - run: cargo fmt --all -- --check
 
   clippy:
-    name: Run lints
+    name: Run clippy lints
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -42,11 +42,8 @@ jobs:
       - run: cargo check --all-targets --all-features
 
   build_and_test:
-    name: Build project and test
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+    name: Run tests
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -55,10 +52,7 @@ jobs:
 
   build_release:
     name: Build project in release
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -67,6 +61,13 @@ jobs:
       - name: Export executable
         uses: actions/upload-artifact@v4
         with:
-          name: elite-dashboard-api-${{ matrix.os }}
+          name: elite-dashboard-api
           compression-level: 9
-          path: target/release/elite-dashboard-api*
+          path: target/release/elite-dashboard-api
+
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - run: docker build . -t elite-dashboard-api
