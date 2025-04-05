@@ -30,7 +30,7 @@ pub async fn auth_discord(
     debug!("{:<12} - {}", "HANDLER", "auth_discord");
     let (auth_url, csrf_token) = discord_auth.init_auth();
 
-    let session_id = session.in it_session(&csrf_token).await?;
+    let session_id = session.init_session(&csrf_token).await?;
 
     // Create and set session cookie
     // User has to complete initial auth flow within 5 minutes. When auth flow succeeds session cookie expiration will be increased
