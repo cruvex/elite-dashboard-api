@@ -1,17 +1,16 @@
 use crate::app::error::AppError;
-use crate::config::{DiscordConfig, RedisConfig};
-use crate::model::discord::{DiscordAuthorizationCodeRequest, DiscordRefreshTokenRequest, DiscordToken, User};
-use crate::web::error::Error;
+use crate::config::DiscordConfig;
+use crate::model::discord::User;
+use crate::service::discord::error::Error;
 use oauth2::basic::{BasicClient, BasicErrorResponse, BasicRevocationErrorResponse, BasicTokenIntrospectionResponse, BasicTokenResponse};
 use oauth2::url::Url;
 use oauth2::{
-    AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, EndpointNotSet, EndpointSet, RedirectUrl, Scope, StandardRevocableToken, TokenUrl,
+    AccessToken, AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, EndpointNotSet, EndpointSet, RedirectUrl, Scope,
+    StandardRevocableToken, TokenUrl,
 };
-use redis::{Commands, ExpireOption, ToRedisArgs};
-use redis_pool::{RedisPool, SingleRedisPool};
 use reqwest::Client;
-use tracing::debug;
-use urlencoding::encode;
+use std::fmt::Display;
+use strum_macros::{Display, EnumString};
 
 pub type DiscordAuthClient = BasicClient;
 
@@ -31,7 +30,7 @@ pub struct DiscordAuthService {
         EndpointNotSet,
         EndpointSet,
     >,
-    pub scopes: String,
+    discord_config: DiscordConfig,
 }
 
 impl DiscordAuthService {
@@ -54,91 +53,54 @@ impl DiscordAuthService {
         Self {
             http_client,
             oauth_client,
-            scopes: discord_config.scopes.to_string(),
+            discord_config: discord_config.clone(),
         }
     }
 
+    /// Returns an oauth url for logging in with discord as well as a csrf token for safe oauth flow
     pub fn init_auth(&self) -> (Url, CsrfToken) {
-        self.oauth_client.authorize_url(CsrfToken::new_random).add_scope(Scope::new(self.scopes.clone())).url()
+        self.oauth_client.authorize_url(CsrfToken::new_random).add_scope(Scope::new(self.discord_config.scopes.clone())).url()
     }
 
+    /// Exchanges oauth code for discord tokens
     pub async fn exchanged_code_for_tokens(&self, code: &str) -> Result<BasicTokenResponse, AppError> {
         let token = self
             .oauth_client
             .exchange_code(AuthorizationCode::new(code.to_string()))
             .request_async(&self.http_client)
             .await
-            .map_err(|e| Error::DiscordTokenError(e.to_string()))?;
+            .map_err(|e| Error::DiscordApiRequestError(e.to_string()))?;
 
         Ok(token)
     }
 
-    // pub async fn authenticate(&self, code: &str) -> Result<String, Error> {
-    //     let (auth_url, csrf_token) = client.authorize_url(CsrfToken::new_random).add_scope(Scope::new("identify".to_string())).url();
-    //
-    //     let token = self.get_discord_token_by_code(code).await;
-    //     let user = self.get_discord_self_user(&token.access_token).await?;
-    //
-    //     self.store_token(&user.id, &token).await?;
-    //
-    //     Ok(user.id)
-    // }
-    //
-    // /// Exchanges the authorization code for an access token.
-    // pub async fn get_discord_token_by_code(&self, code: &str) -> DiscordToken {
-    //     self.client
-    //         .post(&self.api_url_for("oauth2/token"))
-    //         .form(&DiscordAuthorizationCodeRequest {
-    //             grant_type: "authorization_code".to_string(),
-    //             code: code.to_string(),
-    //             redirect_uri: self.redirect_url.to_string(),
-    //         })
-    //         .basic_auth(&self.client_id, Some(&self.client_secret))
-    //         .send()
-    //         .await
-    //         .expect("Failed to send token request")
-    //         .json::<DiscordToken>()
-    //         .await
-    //         .expect("Failed to deserialize token response")
-    // }
-    //
-    // /// Exchanges the refresh token for an access token.
-    // pub async fn get_discord_token_by_refresh_token(&self, refresh_token: &str) -> DiscordToken {
-    //     self.client
-    //         .post(&self.api_url_for("oauth2/token"))
-    //         .form(&DiscordRefreshTokenRequest {
-    //             grant_type: "refresh_token".to_string(),
-    //             refresh_token: refresh_token.to_string(),
-    //             redirect_uri: self.redirect_url.to_string(),
-    //         })
-    //         .basic_auth(&self.client_id, Some(&self.client_secret))
-    //         .send()
-    //         .await
-    //         .expect("Failed to send token request")
-    //         .json::<DiscordToken>()
-    //         .await
-    //         .expect("Failed to deserialize token response")
-    // }
-    //
-    // /// Calls Discord’s `/users/@me` endpoint with the given access token to fetch user info.
-    // pub async fn get_discord_self_user(&self, access_token: &str) -> Result<User, Error> {
-    //     let user = self
-    //         .client
-    //         .get(&self.api_url_for("users/@me"))
-    //         .bearer_auth(access_token)
-    //         .send()
-    //         .await
-    //         .map_err(|e| Error::DiscordApiError(e.to_string()))?
-    //         .json::<User>()
-    //         .await
-    //         .map_err(|e| Error::DiscordApiError(e.to_string()))?;
-    //
-    //     Ok(user)
-    // }
-    //
-    // fn api_url_for(&self, path: &str) -> String {
-    //     format!("https://discord.com/api/v{}/{}", self.api_version, path)
-    // }
+    /// Calls Discord’s `/users/@me` endpoint with the given access token to fetch user info.
+    pub async fn get_discord_self_user_id(&self, access_token: &AccessToken) -> Result<String, Error> {
+        let user = self
+            .http_client
+            .get(&self.api_url_for("users/@me"))
+            .bearer_auth(access_token.secret())
+            .send()
+            .await
+            .map_err(|e| Error::DiscordApiRequestError(e.to_string()))?
+            .json::<User>()
+            .await
+            .map_err(|e| Error::DiscordApiRequestError(e.to_string()))?;
+
+        Ok(user.id)
+    }
+
+    pub fn get_role_for_member(&self, roles: &Vec<String>) -> Result<UserRole, Error> {
+        if roles.contains(&self.discord_config.elite_staff_role_id) {
+            Ok(UserRole::Staff)
+        } else {
+            Ok(UserRole::Member)
+        }
+    }
+
+    fn api_url_for(&self, path: &str) -> String {
+        format!("https://discord.com/api/v{}/{}", self.discord_config.api_version, path)
+    }
     //
     // fn oauth_url_for(&self, path: &str) -> String {
     //     format!("https://discord.com/oauth2/{}", path)
@@ -163,4 +125,14 @@ impl DiscordAuthService {
     //
     //     Ok(())
     // }
+}
+
+#[derive(EnumString, Display)]
+pub enum UserRole {
+    #[strum(serialize = "member")]
+    Member,
+    #[strum(serialize = "staff")]
+    Staff,
+    #[strum(serialize = "bot")]
+    _Bot,
 }

@@ -1,15 +1,21 @@
 use crate::app::error::AppError;
-use crate::config::{JwtConfig, RedisConfig};
+use crate::config::JwtConfig;
 use crate::db::redis::RedisConnection;
-use crate::model::discord::User;
+use crate::service::constant::{
+    CSRF_TOKEN_KEY, DISCORD_ACCESS_TOKEN_KEY, DISCORD_REFRESH_TOKEN_KEY, FIVE_MINUTES, ONE_MONTH, SESSION_COOKIE, USER_ID_KEY, USER_ROLE_KEY,
+};
+use crate::service::discord::discord_auth::UserRole;
 use crate::web::error::Error;
 use hex::encode;
-use oauth2::CsrfToken;
 use oauth2::basic::BasicTokenResponse;
+use oauth2::{CsrfToken, TokenResponse};
 use rand::RngCore;
-use redis::AsyncCommands;
+use redis::{AsyncCommands, ExpireOption};
 use std::sync::Arc;
+use time::{Duration, OffsetDateTime};
 use tokio::sync::Mutex;
+use tower_cookies::Cookie;
+use tower_cookies::cookie::SameSite;
 use tracing::debug;
 
 #[derive(Clone)]
@@ -28,31 +34,95 @@ impl SessionService {
 }
 
 impl SessionService {
-    pub async fn init_session(&self, csrf_token: &CsrfToken) -> String {
+    pub async fn init_session(&self, csrf_token: &CsrfToken) -> Result<String, AppError> {
         let mut con = self.redis.lock().await;
 
         let session_id = self.generate_session_id();
         let session_key = format!("session:{}", session_id);
 
-        //TODO: implement better error handling
-        let _: () = con.hset(session_key, "csrf_token", csrf_token.secret()).await.expect("Failed to set csrf token");
+        let _: () = con
+            .hset(&session_key, CSRF_TOKEN_KEY, csrf_token.secret())
+            .await
+            .map_err(|e| Error::RedisOperationError(e.to_string()))?;
 
-        session_id
+        // User has to complete initial auth flow within 5 minutes. When auth flow succeeds session expiration will be increased
+        let _: () = con.expire(&session_key, FIVE_MINUTES).await.map_err(|e| Error::RedisOperationError(e.to_string()))?;
+
+        Ok(session_id)
     }
 
-    pub async fn validate_session(&self, session_id: &str, csrf_token: CsrfToken) -> Result<bool, AppError> {
+    pub async fn validate_init_session(&self, session_id: &String, csrf_token: &CsrfToken) -> Result<(), AppError> {
         let mut con = self.redis.lock().await;
         let session_key = format!("session:{}", session_id);
 
-        match con.hget::<_, _, Option<String>>(session_key, "csrf_token").await {
-            Ok(Some(token)) if token == csrf_token.secret().to_string() => Ok(true),
-            _ => Err(Error::NoSessionFound.into()),
+        debug!("Validating session - {}", &session_key);
+
+        // Check if session exists with cookie session id and state csrf_token
+        match con.hget::<_, _, Option<String>>(&session_key, CSRF_TOKEN_KEY).await {
+            Ok(Some(token)) if token.as_str() == csrf_token.secret() => Ok(()),
+            Ok(_) => Err(Error::NoSessionFound.into()),
+            Err(err) => Err(Error::RedisOperationError(err.to_string()).into()),
         }
     }
 
-    pub fn get_session_by_id(&self, session_id: String) {
-        todo!()
+    pub async fn validate_session(&self, session_id: &String) -> Result<(), AppError> {
+        Ok(())
     }
+
+    pub fn create_session_cookie(&self, session_id: String, expires_in: i64) -> Cookie<'static> {
+        Cookie::build((SESSION_COOKIE, session_id))
+            .path("/")
+            .secure(self.secure_cookie)
+            .http_only(true)
+            .same_site(SameSite::Lax)
+            .expires(OffsetDateTime::now_utc() + Duration::seconds(expires_in))
+            .build()
+    }
+
+    pub async fn save_session(
+        &self,
+        session_id: &String,
+        tokens: &BasicTokenResponse,
+        user_id: &String,
+        user_role: &UserRole,
+    ) -> Result<(), AppError> {
+        let mut con = self.redis.lock().await;
+
+        let session_key = format!("session:{}", session_id);
+
+        let redis_operations = [
+            (USER_ID_KEY, user_id),
+            (USER_ROLE_KEY, &user_role.to_string()),
+            (DISCORD_ACCESS_TOKEN_KEY, &tokens.access_token().secret()),
+            (DISCORD_REFRESH_TOKEN_KEY, &tokens.refresh_token().unwrap().secret()),
+        ];
+
+        debug!("Saving session - {} - {}", &user_id, &user_role.to_string());
+        let _: () = con.hset_multiple(&session_key, &redis_operations).await.map_err(|e| {
+            debug!("Failed to store session info: {:?}", e);
+            Error::RedisOperationError(e.to_string())
+        })?;
+
+        let discord_access_token_expires_in = i64::try_from(tokens.expires_in().unwrap().as_secs()).unwrap() - 5;
+        let _: () = con
+            .hexpire(
+                &session_key,
+                discord_access_token_expires_in,
+                ExpireOption::NONE,
+                DISCORD_ACCESS_TOKEN_KEY,
+            )
+            .await
+            .map_err(|e| Error::RedisOperationError(e.to_string()))?;
+
+        // Discord oath flow completed successfully. Session valid for 1 month
+        let _: () = con.expire(&session_key, ONE_MONTH).await.map_err(|e| Error::RedisOperationError(e.to_string()))?;
+
+        Ok(())
+    }
+
+    // pub fn get_session_by_id(&self, _session_id: String) {
+    //     todo!()
+    // }
 
     pub fn generate_session_id(&self) -> String {
         let mut bytes = [0u8; 512];

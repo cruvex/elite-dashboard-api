@@ -1,7 +1,4 @@
-use crate::web;
 use crate::web::error::Error;
-use crate::web::middleware::mw_req_log::ReqStamp;
-use axum::http::{Method, Uri};
 use axum::response::{IntoResponse, Response};
 use reqwest::StatusCode;
 use tracing::{debug, trace};

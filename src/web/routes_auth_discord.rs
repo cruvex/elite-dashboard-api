@@ -2,25 +2,24 @@ use axum::extract::{Query, State};
 use axum::response::Html;
 use axum::routing::get;
 use axum::{Json, Router};
-use oauth2::{AuthorizationCode, CsrfToken, Scope};
+use oauth2::{CsrfToken, TokenResponse};
 use serde::Deserialize;
 use serde_json::{Value, json};
-use serde_with::NoneAsEmptyString;
-use serde_with::serde_as;
 use tokio::fs;
-use tower_cookies::cookie::SameSite;
-use tower_cookies::{Cookie, Cookies};
-use tracing::debug;
+use tower_cookies::Cookies;
+use tracing::{debug, warn};
 
 use crate::AppState;
 use crate::app::error::Result;
-use crate::service::jwt::Claims;
-use crate::service::{DiscordAuthService, SessionService};
+use crate::service::constant::{FIVE_MINUTES, ONE_MONTH, SESSION_COOKIE};
+use crate::service::{DiscordApiService, DiscordAuthService, SessionService};
 use crate::web::error::Error;
-use crate::web::{ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE};
 
 pub fn routes(state: AppState) -> Router {
-    Router::new().route("/auth/discord", get(auth_discord)).route("/auth/discord/callback", get(auth_discord_callback)).with_state(state)
+    Router::new()
+        .route("/auth/discord", get(auth_discord))
+        .route("/auth/discord/callback", get(auth_discord_callback))
+        .with_state(state)
 }
 
 pub async fn auth_discord(
@@ -31,16 +30,11 @@ pub async fn auth_discord(
     debug!("{:<12} - {}", "HANDLER", "auth_discord");
     let (auth_url, csrf_token) = discord_auth.init_auth();
 
-    let session_id = session.init_session(&csrf_token).await;
-    debug!("{:<12} - Created session: {:?}", "HANDLER", session_id);
+    let session_id = session.in it_session(&csrf_token).await?;
 
     // Create and set session cookie
-    let mut session_cookie = Cookie::new("SESSION", session_id);
-    session_cookie.set_http_only(true);
-    session_cookie.set_path("/");
-    session_cookie.set_same_site(SameSite::Lax);
-    session_cookie.set_secure(session.secure_cookie);
-
+    // User has to complete initial auth flow within 5 minutes. When auth flow succeeds session cookie expiration will be increased
+    let session_cookie = session.create_session_cookie(session_id.clone(), FIVE_MINUTES);
     cookies.add(session_cookie);
 
     // csrf_token is set in 'state' query parameter
@@ -49,68 +43,70 @@ pub async fn auth_discord(
     })))
 }
 
-#[serde_as]
 #[derive(Debug, Deserialize)]
 pub struct DiscordCallbackQueryParams {
-    #[serde_as(as = "NoneAsEmptyString")]
     code: Option<String>,
-    #[serde_as(as = "NoneAsEmptyString")]
     state: Option<String>,
+    error: Option<String>,
+    error_description: Option<String>,
 }
 
 pub async fn auth_discord_callback(
-    cookies: Cookies,
-    State(session): State<SessionService>,
+    State(session_store): State<SessionService>,
     State(discord_auth): State<DiscordAuthService>,
+    State(discord_api): State<DiscordApiService>,
     Query(params): Query<DiscordCallbackQueryParams>,
+    cookies: Cookies,
 ) -> Result<Html<String>> {
     debug!("{:<12} - {}", "HANDLER", "auth_discord_callback");
+
+    // Check for error
+    if params.error.is_some() || params.error_description.is_some() {
+        return Ok(handle_callback_error(&params.error, &params.error_description));
+    }
 
     // code and state are required in callback
     let code = params.code.ok_or(Error::NoCodeInDiscordCallbackPath)?;
     let state = params.state.ok_or(Error::NoStateInDiscordCallbackPath)?;
 
-    let session_id = cookies.get("SESSION");
-    let session_id = session_id.ok_or(Error::SessionCookieNotFound)?.value().to_string();
+    let session_cookie = cookies.get(SESSION_COOKIE).ok_or(Error::SessionCookieNotFound)?;
+    let session_id = session_cookie.value().to_string();
 
-    debug!("{:<12} - Session ID: {:?}", "HANDLER", session_id);
+    debug!("{:<12} - Session ID: {:?}", "HANDLER", &session_id);
 
     // Check valid session by session_id and state (csrf_token)
-    let valid_session = session.validate_session(&session_id, CsrfToken::new(state.clone())).await?;
+    session_store.validate_init_session(&session_id, &CsrfToken::new(state.clone())).await?;
 
-    match valid_session {
-        true => debug!("{:<12} - Valid session", "HANDLER"),
-        false => debug!("{:<12} - Invalid session", "HANDLER"),
-    }
+    debug!("{:<12} - Validated session", "HANDLER");
 
     let tokens = discord_auth.exchanged_code_for_tokens(&code).await?;
 
-    debug!("{:<12} - {:?}", "HANDLER", tokens);
+    debug!("{:<12} - Exchanged code for tokens", "HANDLER");
 
-    // let user_id = state.discord.auth.authenticate(code).await?;
-    //
-    // let mut claims = Claims::new(&user_id);
-    //
-    // let access_token = state.jwt.generate_access_token(&mut claims).map_err(|_e| Error::JwtTokenGenerationError)?;
-    // let mut access_token_cookie = Cookie::new(ACCESS_TOKEN_COOKIE, access_token);
-    // access_token_cookie.set_http_only(true);
-    // access_token_cookie.set_path("/");
-    // access_token_cookie.set_same_site(SameSite::Strict);
-    // access_token_cookie.set_secure(state.jwt.secure_cookie);
-    //
-    // let refresh_token = state.jwt.generate_refresh_token(&mut claims).map_err(|_e| Error::JwtTokenGenerationError)?;
-    // let mut refresh_token_cookie = Cookie::new(REFRESH_TOKEN_COOKIE, refresh_token);
-    // refresh_token_cookie.set_http_only(true);
-    // refresh_token_cookie.set_path("/auth/refresh");
-    // refresh_token_cookie.set_same_site(SameSite::Strict);
-    // refresh_token_cookie.set_secure(state.jwt.secure_cookie);
-    //
-    // cookies.add(access_token_cookie);
-    // cookies.add(refresh_token_cookie);
-    //
-    // // TODO: Properly implement response html with error state
-    // // Return the appropriate HTML response
+    let self_user_id = discord_auth.get_discord_self_user_id(tokens.access_token()).await?;
+
+    let elite_member = discord_api.get_elite_guild_member(&self_user_id).await.map_err(|e| Error::DiscordApiError(e.to_string()))?;
+
+    let user_role = discord_auth.get_role_for_member(&elite_member.roles).map_err(|e| Error::DiscordApiError(e.to_string()))?;
+
+    session_store.save_session(&session_id, &tokens, &self_user_id, &user_role).await?;
+
+    // Discord oauth flow successful. Session cookie valid for 1 month
+    let session_cookie = session_store.create_session_cookie(session_id.clone(), ONE_MONTH);
+    cookies.add(session_cookie);
+
+    // TODO: Properly implement response html with error state
+    // Return the appropriate HTML response
     render_callback_response().await
+}
+
+fn handle_callback_error(error: &Option<String>, error_description: &Option<String>) -> Html<String> {
+    warn!(
+        "{:<12} - Discord Oauth flow failed: Error: {:?} - Description: {:?}",
+        "HANDLER", error, error_description
+    );
+    // Html(DISCORD_AUTH_FAILED_HTML)
+    todo!()
 }
 
 async fn render_callback_response() -> Result<Html<String>> {

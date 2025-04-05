@@ -1,3 +1,4 @@
+pub mod constant;
 mod discord;
 pub mod jwt;
 mod session;
