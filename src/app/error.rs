@@ -6,6 +6,7 @@ use serde_json::json;
 pub type Result<T> = core::result::Result<T, AppError>;
 
 // Client facing errors
+#[derive(Debug, Clone)]
 pub enum AppError {
     NotFound,
     InternalServerError,
@@ -23,6 +24,11 @@ impl IntoResponse for AppError {
         };
 
         let body = json!({ "error": message });
-        (status, Json(body)).into_response()
+        let mut res = (status, Json(body)).into_response();
+
+        // Put error in response for later use in response_mapper
+        res.extensions_mut().insert(self);
+
+        res
     }
 }

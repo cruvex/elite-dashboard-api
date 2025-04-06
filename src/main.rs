@@ -1,6 +1,5 @@
 mod app;
 mod config;
-mod ctx;
 mod db;
 mod error;
 mod model;
@@ -29,18 +28,27 @@ async fn main() {
     let state = AppState::initialize(&config).await.expect("Failed to initialize app state");
 
     let routes_api =
-        web::routes_discord_api::routes(state.clone()).layer(middleware::from_fn_with_state(state.clone(), web::middleware::mw_auth::mw_ctx_require));
+        web::routes_discord_api::routes(state.clone())
+            .merge(web::routes_elite::routes(state.clone()))
+            .layer(middleware::from_fn_with_state(
+                state.clone(),
+                web::middleware::mw_session::mw_session_require,
+            ));
 
-    let routes_auth = Router::new().merge(web::routes_auth::routes(state.clone())).merge(web::routes_auth_discord::routes(state));
+    // let routes_elite = web::routes_elite::routes(state.clone());
+
+    let routes_auth = Router::new()
+        // .merge(web::routes_auth::routes(state.clone()))
+        .merge(web::routes_auth_discord::routes(state.clone()));
 
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
-        .allow_origin(["http://localhost:5173".parse().unwrap()])
+        .allow_origin(["http://localhost:5173".parse().unwrap(), "http://localhost:3000".parse().unwrap()])
         .allow_headers([CONTENT_TYPE, AUTHORIZATION])
         .allow_credentials(true);
 
     let routes_all = Router::new()
-        .nest("/api", routes_api)
+        .merge(routes_api)
         .merge(routes_auth)
         .route("/health", get(|| async { "Hello, World!" }))
         .layer(middleware::map_response(web::middleware::mw_response_map::mw_response_map))

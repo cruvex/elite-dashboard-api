@@ -9,7 +9,7 @@ pub struct AppConfig {
     pub database: DatabaseConfig,
     pub discord: DiscordConfig,
     pub redis: RedisConfig,
-    pub jwt: JwtConfig,
+    pub session: SessionConfig,
 }
 
 #[serde_inline_default]
@@ -50,13 +50,7 @@ pub struct RedisConfig {
 
 #[serde_inline_default]
 #[derive(Deserialize, Clone)]
-pub struct JwtConfig {
-    pub access_token_secret: String,
-    pub refresh_token_secret: String,
-    #[serde_inline_default(3600)]
-    pub access_token_exp: usize,
-    #[serde_inline_default(604800)]
-    pub refresh_token_exp: usize,
+pub struct SessionConfig {
     pub secure_cookie: bool,
 }
 

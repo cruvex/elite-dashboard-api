@@ -1,6 +1,7 @@
 use crate::app::error::AppError;
 use crate::config::DiscordConfig;
 use crate::model::discord::User;
+use crate::model::session::UserRole;
 use crate::service::discord::error::Error;
 use oauth2::basic::{BasicClient, BasicErrorResponse, BasicRevocationErrorResponse, BasicTokenIntrospectionResponse, BasicTokenResponse};
 use oauth2::url::Url;
@@ -9,8 +10,6 @@ use oauth2::{
     StandardRevocableToken, TokenUrl,
 };
 use reqwest::Client;
-use std::fmt::Display;
-use strum_macros::{Display, EnumString};
 
 pub type DiscordAuthClient = BasicClient;
 
@@ -101,38 +100,4 @@ impl DiscordAuthService {
     fn api_url_for(&self, path: &str) -> String {
         format!("https://discord.com/api/v{}/{}", self.discord_config.api_version, path)
     }
-    //
-    // fn oauth_url_for(&self, path: &str) -> String {
-    //     format!("https://discord.com/oauth2/{}", path)
-    // }
-    //
-    // async fn store_token(&self, user_id: &str, token: &DiscordToken) -> Result<(), Error> {
-    //     let mut conn = self.redis.get_connection().map_err(|_e| Error::RedisConnectionError)?;
-    //     let user_key = format!("user:{}", user_id);
-    //     let redis_operations = [("access_token", &token.access_token), ("refresh_token", &token.refresh_token)];
-    //
-    //     debug!("Storing token information in Redis");
-    //     let _: () = conn.hset_multiple(&user_key, &redis_operations).map_err(|e| {
-    //         debug!("Failed to store tokens: {:?}", e);
-    //         Error::RedisOperationError(e.to_string())
-    //     })?;
-    //
-    //     debug!("Setting token expiration");
-    //     let _: () = conn.hexpire(&user_key, token.expires_in - 5, ExpireOption::NONE, "access_token").map_err(|e| {
-    //         debug!("Failed to set expiration: {:?}", e);
-    //         Error::RedisOperationError(e.to_string())
-    //     })?;
-    //
-    //     Ok(())
-    // }
-}
-
-#[derive(EnumString, Display)]
-pub enum UserRole {
-    #[strum(serialize = "member")]
-    Member,
-    #[strum(serialize = "staff")]
-    Staff,
-    #[strum(serialize = "bot")]
-    _Bot,
 }
