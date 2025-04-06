@@ -40,6 +40,6 @@ impl<S: Send + Sync> FromRequestParts<S> for Session {
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self> {
         debug!("{:<12} - Session", "EXTRACTOR");
 
-        parts.extensions.get::<Session>().cloned().ok_or(Error::NoSessionFound.into())
+        parts.extensions.get::<Session>().cloned().ok_or(Error::SessionNotFound.into())
     }
 }

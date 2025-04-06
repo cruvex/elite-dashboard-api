@@ -10,7 +10,7 @@ pub enum Error {
 
     // Session errors
     SessionCookieNotFound,
-    NoSessionFound,
+    SessionNotFound,
     InvalidSession(String),
 
     // Redis errors
@@ -27,7 +27,7 @@ impl From<Error> for AppError {
             Error::DiscordApiError(_) => AppError::InternalServerError,
             Error::RedisOperationError(_) => AppError::InternalServerError,
             Error::SessionCookieNotFound => AppError::Unauthorized,
-            Error::NoSessionFound => AppError::Unauthorized,
+            Error::SessionNotFound => AppError::Unauthorized,
             Error::InvalidSession(_) => AppError::Unauthorized,
         }
     }

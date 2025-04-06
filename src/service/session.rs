@@ -58,7 +58,7 @@ impl SessionService {
 
         match session {
             Some(session) => Ok(session),
-            None => Err(Error::NoSessionFound.into()),
+            None => Err(Error::SessionNotFound.into()),
         }
     }
 
@@ -71,7 +71,7 @@ impl SessionService {
         // Check if session exists with cookie session id and state csrf_token
         match con.hget::<_, _, Option<String>>(&session_key, CSRF_TOKEN_KEY).await {
             Ok(Some(token)) if token.as_str() == csrf_token.secret() => Ok(()),
-            Ok(_) => Err(Error::NoSessionFound.into()),
+            Ok(_) => Err(Error::SessionNotFound.into()),
             Err(err) => Err(Error::RedisOperationError(err.to_string()).into()),
         }
     }
@@ -83,7 +83,7 @@ impl SessionService {
         let session_exists = con.exists::<_, bool>(&session_key).await.map_err(|e| Error::RedisOperationError(e.to_string()))?;
 
         if !session_exists {
-            return Err(Error::NoSessionFound.into());
+            return Err(Error::SessionNotFound.into());
         }
 
         let session = match con.hgetall::<_, Session>(&session_key).await {
