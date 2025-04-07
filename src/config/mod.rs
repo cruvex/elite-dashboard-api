@@ -40,6 +40,7 @@ pub struct DiscordConfig {
     pub bot_token: String,
     pub elite_guild_id: String,
     pub elite_staff_role_id: String,
+    pub elite_role_id: String,
 }
 
 #[serde_inline_default]

@@ -52,7 +52,7 @@ impl SessionService {
     }
 
     pub async fn validate_session(&self, session_id: &String) -> Result<Session, AppError> {
-        let session = self.get_session_by_id(&session_id).await?;
+        let session = self.get_session_by_id(session_id).await?;
 
         match session {
             Some(session) => Ok(session),
@@ -114,8 +114,8 @@ impl SessionService {
         let redis_operations = [
             (USER_ID_KEY, user_id),
             (USER_ROLE_KEY, &user_role.to_string()),
-            (DISCORD_ACCESS_TOKEN_KEY, &tokens.access_token().secret()),
-            (DISCORD_REFRESH_TOKEN_KEY, &tokens.refresh_token().unwrap().secret()),
+            (DISCORD_ACCESS_TOKEN_KEY, tokens.access_token().secret()),
+            (DISCORD_REFRESH_TOKEN_KEY, tokens.refresh_token().unwrap().secret()),
         ];
 
         debug!("Saving session - {} - {}", &user_id, &user_role.to_string());

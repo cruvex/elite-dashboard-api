@@ -77,7 +77,7 @@ impl DiscordAuthService {
     pub async fn get_discord_self_user_id(&self, access_token: &AccessToken) -> Result<String, Error> {
         let user = self
             .http_client
-            .get(&self.api_url_for("users/@me"))
+            .get(self.api_url_for("users/@me"))
             .bearer_auth(access_token.secret())
             .send()
             .await
@@ -89,11 +89,13 @@ impl DiscordAuthService {
         Ok(user.id)
     }
 
-    pub fn get_role_for_member(&self, roles: &Vec<String>) -> Result<UserRole, Error> {
+    pub fn get_role_for_member(&self, roles: &[String]) -> Option<UserRole> {
         if roles.contains(&self.discord_config.elite_staff_role_id) {
-            Ok(UserRole::Staff)
+            Some(UserRole::Staff)
+        } else if roles.contains(&self.discord_config.elite_role_id) {
+            Some(UserRole::Elite)
         } else {
-            Ok(UserRole::Elite)
+            None
         }
     }
 

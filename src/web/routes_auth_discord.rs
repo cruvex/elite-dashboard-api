@@ -87,7 +87,7 @@ pub async fn auth_discord_callback(
 
     let elite_member = discord_api.get_elite_guild_member(&self_user_id).await.map_err(|e| Error::DiscordApiError(e.to_string()))?;
 
-    let user_role = discord_auth.get_role_for_member(&elite_member.roles).map_err(|e| Error::DiscordApiError(e.to_string()))?;
+    let user_role = discord_auth.get_role_for_member(&elite_member.roles).ok_or(Error::NotInElite)?;
 
     session_store.save_session(&session_id, &tokens, &self_user_id, &user_role).await?;
 

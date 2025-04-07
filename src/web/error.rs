@@ -15,6 +15,8 @@ pub enum Error {
 
     // Redis errors
     RedisOperationError(String),
+
+    NotInElite,
 }
 
 impl From<Error> for AppError {
@@ -29,6 +31,7 @@ impl From<Error> for AppError {
             Error::SessionCookieNotFound => AppError::Unauthorized,
             Error::SessionNotFound => AppError::Unauthorized,
             Error::InvalidSession(_) => AppError::Unauthorized,
+            Error::NotInElite => AppError::Unauthorized,
         }
     }
 }
