@@ -93,7 +93,7 @@ impl DiscordAuthService {
         if roles.contains(&self.discord_config.elite_staff_role_id) {
             Ok(UserRole::Staff)
         } else {
-            Ok(UserRole::Member)
+            Ok(UserRole::Elite)
         }
     }
 

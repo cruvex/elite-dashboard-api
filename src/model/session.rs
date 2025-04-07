@@ -24,12 +24,12 @@ pub struct DiscordTokens {
 
 #[derive(EnumString, Display, Debug, Serialize, Clone)]
 pub enum UserRole {
-    #[strum(serialize = "member")]
-    Member,
     #[strum(serialize = "staff")]
     Staff,
+    #[strum(serialize = "elite")]
+    Elite,
     #[strum(serialize = "bot")]
-    _Bot,
+    Bot,
 }
 
 impl FromRedisValue for Session {
