@@ -45,10 +45,6 @@ impl DiscordApiService {
             .await
             .map_err(|e| DiscordApiRequestError(e.to_string()))?;
 
-        // request.try_clone().map(|req| req.me)
-        // response.status().
-        // response.
-
         if !response.status().is_success() {
             debug!("Failed to get response: {:?}", response);
             return Err(DiscordApiRequestError(response.status().to_string()));

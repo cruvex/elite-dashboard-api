@@ -1,10 +1,10 @@
-use std::time::Instant;
 use crate::app::error::Result;
 use axum::body::Body;
 use axum::http::{Method, Request, Uri};
 use axum::middleware::Next;
 use axum::response::Response;
 use chrono::Utc;
+use std::time::Instant;
 use time::OffsetDateTime;
 use tracing::{debug, trace};
 use uuid::Uuid;
@@ -16,7 +16,7 @@ pub struct ReqStamp {
     pub uuid: Uuid,
     pub origin: String,
     pub time_in: String,
-    pub time_out: String
+    pub time_out: String,
 }
 
 pub async fn mw_req_log(uri: Uri, req_method: Method, req: Request<Body>, next: Next) -> Result<Response> {
@@ -40,7 +40,7 @@ pub async fn mw_req_log(uri: Uri, req_method: Method, req: Request<Body>, next: 
         uuid: req_id.clone(),
         origin: origin.to_string(),
         time_in: time_in.to_rfc3339(),
-        time_out: time_out.to_rfc3339()
+        time_out: time_out.to_rfc3339(),
     };
 
     res.extensions_mut().insert(req_stamp.clone());
