@@ -8,3 +8,5 @@ pub const DISCORD_ACCESS_TOKEN_KEY: &str = "discord_access_token";
 pub const DISCORD_REFRESH_TOKEN_KEY: &str = "discord_refresh_token";
 
 pub const SESSION_COOKIE: &str = "elite-dashboard-session-id";
+
+pub const RAILWAY_REQUEST_ID_HEADER: &str = "X-Railway-Request-Id";
