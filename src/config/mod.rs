@@ -18,7 +18,7 @@ pub struct ServerConfig {
     #[serde_inline_default(String::from("::"))]
     pub address: String,
     #[serde_inline_default(8080)]
-    pub port: u16,
+    pub port: i64,
 }
 
 #[serde_inline_default]
@@ -57,7 +57,7 @@ pub struct SessionConfig {
 impl AppConfig {
     pub fn from_env() -> Result<Self, Error> {
         let config = Config::builder()
-            .add_source(Environment::default().separator("__").convert_case(Case::Snake))
+            .add_source(Environment::default().separator("__").convert_case(Case::Snake).try_parsing(true))
             .build()
             .expect("Failed to build config");
 
