@@ -51,9 +51,9 @@ async fn main() {
         .merge(routes_api)
         .merge(routes_auth)
         .route("/health", get(|| async { "Hello, World!" }))
+        .layer(middleware::from_fn(web::middleware::mw_req_log::mw_req_log))
         .layer(middleware::map_response(web::middleware::mw_response_map::mw_response_map))
         .layer(CookieManagerLayer::new())
-        .layer(middleware::from_fn(web::middleware::mw_req_log::mw_req_log))
         .layer(cors);
 
     let listener_url = format!("{}:{}", &config.server.address, &config.server.port);
