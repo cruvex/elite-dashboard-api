@@ -1,1 +1,4 @@
-pub(crate) mod redis;
+pub mod db;
+pub mod redis;
+
+pub use db::*;
