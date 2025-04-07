@@ -54,8 +54,6 @@ impl SessionService {
     pub async fn validate_session(&self, session_id: &String) -> Result<Session, AppError> {
         let session = self.get_session_by_id(&session_id).await?;
 
-        debug!("Validating session - {:?}", &session);
-
         match session {
             Some(session) => Ok(session),
             None => Err(Error::SessionNotFound.into()),
@@ -65,8 +63,6 @@ impl SessionService {
     pub async fn validate_init_session(&self, session_id: &String, csrf_token: &CsrfToken) -> Result<(), AppError> {
         let mut con = self.redis.lock().await;
         let session_key = format!("session:{}", session_id);
-
-        debug!("Validating session - {}", &session_key);
 
         // Check if session exists with cookie session id and state csrf_token
         match con.hget::<_, _, Option<String>>(&session_key, CSRF_TOKEN_KEY).await {
@@ -113,7 +109,6 @@ impl SessionService {
         user_role: &UserRole,
     ) -> Result<(), AppError> {
         let mut con = self.redis.lock().await;
-
         let session_key = format!("session:{}", session_id);
 
         let redis_operations = [

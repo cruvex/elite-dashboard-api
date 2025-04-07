@@ -29,6 +29,8 @@ pub async fn mw_session_require(
 
     let session = session_store.validate_session(&session_id).await?;
 
+    debug!("{:<12} - Valid session", "MIDDLEWARE");
+
     req.extensions_mut().insert(session.clone());
 
     Ok(next.run(req).await)
@@ -38,8 +40,8 @@ impl<S: Send + Sync> FromRequestParts<S> for Session {
     type Rejection = AppError;
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self> {
-        debug!("{:<12} - Session", "EXTRACTOR");
+        trace!("{:<12} - Session", "EXTRACTOR");
 
-        parts.extensions.get::<Session>().cloned().ok_or(Error::SessionNotFound.into())
+        parts.extensions.get::<Session>().cloned().ok_or_else(|| Error::SessionNotFound.into())
     }
 }
