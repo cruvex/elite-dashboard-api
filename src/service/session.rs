@@ -11,7 +11,7 @@ use oauth2::basic::BasicTokenResponse;
 use oauth2::{CsrfToken, TokenResponse};
 use rand::RngCore;
 use redis::aio::ConnectionManager;
-use redis::{AsyncCommands, ErrorKind, ExpireOption};
+use redis::{AsyncCommands, ErrorKind, ExpireOption, pipe};
 use std::sync::Arc;
 use time::{Duration, OffsetDateTime};
 use tower_cookies::Cookie;
@@ -40,13 +40,12 @@ impl SessionService {
         let session_id = self.generate_session_id();
         let session_key = format!("{}:{}", SESSION_KEY_PREFIX, session_id);
 
-        let _: () = con
+        let _: () = pipe()
             .hset(&session_key, CSRF_TOKEN_KEY, csrf_token.secret())
+            .expire(&session_key, FIVE_MINUTES)
+            .query_async(&mut con)
             .await
             .map_err(|e| Error::RedisOperationError(e.to_string()))?;
-
-        // User has to complete initial auth flow within 5 minutes. When auth flow succeeds session expiration will be increased
-        let _: () = con.expire(&session_key, FIVE_MINUTES).await.map_err(|e| Error::RedisOperationError(e.to_string()))?;
 
         Ok(session_id)
     }
@@ -111,32 +110,28 @@ impl SessionService {
         let mut con = self.redis.as_ref().clone();
         let session_key = format!("{}:{}", SESSION_KEY_PREFIX, session_id);
 
-        let redis_operations = [
+        let session_fields = [
             (USER_ID_KEY, user_id),
             (USER_ROLE_KEY, &user_role.to_string()),
             (DISCORD_ACCESS_TOKEN_KEY, tokens.access_token().secret()),
             (DISCORD_REFRESH_TOKEN_KEY, tokens.refresh_token().unwrap().secret()),
         ];
 
-        debug!("Saving session - {} - {}", &user_id, &user_role.to_string());
-        let _: () = con.hset_multiple(&session_key, &redis_operations).await.map_err(|e| {
-            debug!("Failed to store session info: {:?}", e);
-            Error::RedisOperationError(e.to_string())
-        })?;
-
         let discord_access_token_expires_in = i64::try_from(tokens.expires_in().unwrap().as_secs()).unwrap() - 5;
-        let _: () = con
+
+        debug!("Saving session - {} - {}", &user_id, &user_role.to_string());
+        let _: () = pipe()
+            .hset_multiple(&session_key, &session_fields)
             .hexpire(
                 &session_key,
                 discord_access_token_expires_in,
                 ExpireOption::NONE,
                 DISCORD_ACCESS_TOKEN_KEY,
             )
+            .expire(&session_key, ONE_MONTH)
+            .query_async(&mut con)
             .await
             .map_err(|e| Error::RedisOperationError(e.to_string()))?;
-
-        // Discord oath flow completed successfully. Session valid for 1 month
-        let _: () = con.expire(&session_key, ONE_MONTH).await.map_err(|e| Error::RedisOperationError(e.to_string()))?;
 
         Ok(())
     }
