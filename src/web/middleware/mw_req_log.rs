@@ -9,6 +9,7 @@ use tracing::trace;
 use uuid::Uuid;
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ReqStamp {
     pub method: Method,
     pub uri: Uri,

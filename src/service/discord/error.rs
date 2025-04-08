@@ -4,6 +4,7 @@ use tracing::debug;
 
 #[derive(Clone, Debug)]
 pub enum Error {
+    #[allow(dead_code)]
     DiscordApiRequestError(String),
 }
 

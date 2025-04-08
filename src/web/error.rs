@@ -6,14 +6,17 @@ pub enum Error {
     // Auth/Discord related errors
     NoCodeInDiscordCallbackPath,
     NoStateInDiscordCallbackPath,
+    #[allow(dead_code)]
     DiscordApiError(String),
 
     // Session errors
     SessionCookieNotFound,
     SessionNotFound,
+    #[allow(dead_code)]
     InvalidSession(String),
 
     // Redis errors
+    #[allow(dead_code)]
     RedisOperationError(String),
 
     NotInElite,
