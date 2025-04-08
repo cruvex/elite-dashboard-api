@@ -85,7 +85,7 @@ pub async fn auth_discord_callback(
 
     let self_user_id = discord_auth.get_discord_self_user_id(tokens.access_token()).await?;
 
-    let elite_member = discord_api.get_elite_guild_member(&self_user_id).await.map_err(|e| Error::DiscordApiError(e.to_string()))?;
+    let elite_member = discord_api.get_elite_guild_member(&self_user_id).await?.ok_or(Error::NotInEliteGuild)?;
 
     let user_role = discord_auth.get_role_for_member(&elite_member.roles).ok_or(Error::NotInElite)?;
 

@@ -3,7 +3,8 @@ use crate::config::SessionConfig;
 use crate::db::redis::RedisConnection;
 use crate::model::session::{Session, UserRole};
 use crate::service::constant::{
-    CSRF_TOKEN_KEY, DISCORD_ACCESS_TOKEN_KEY, DISCORD_REFRESH_TOKEN_KEY, FIVE_MINUTES, ONE_MONTH, SESSION_COOKIE, USER_ID_KEY, USER_ROLE_KEY,
+    CSRF_TOKEN_KEY, DISCORD_ACCESS_TOKEN_KEY, DISCORD_REFRESH_TOKEN_KEY, FIVE_MINUTES, ONE_MONTH, SESSION_COOKIE, SESSION_KEY_PREFIX, USER_ID_KEY,
+    USER_ROLE_KEY,
 };
 use crate::web::error::Error;
 use hex::encode;
@@ -38,7 +39,7 @@ impl SessionService {
         let mut con = self.redis.lock().await;
 
         let session_id = self.generate_session_id();
-        let session_key = format!("session:{}", session_id);
+        let session_key = format!("{}:{}", SESSION_KEY_PREFIX, session_id);
 
         let _: () = con
             .hset(&session_key, CSRF_TOKEN_KEY, csrf_token.secret())
@@ -62,7 +63,7 @@ impl SessionService {
 
     pub async fn validate_init_session(&self, session_id: &String, csrf_token: &CsrfToken) -> Result<(), AppError> {
         let mut con = self.redis.lock().await;
-        let session_key = format!("session:{}", session_id);
+        let session_key = format!("{}:{}", SESSION_KEY_PREFIX, session_id);
 
         // Check if session exists with cookie session id and state csrf_token
         match con.hget::<_, _, Option<String>>(&session_key, CSRF_TOKEN_KEY).await {
@@ -74,7 +75,7 @@ impl SessionService {
 
     pub async fn get_session_by_id(&self, session_id: &String) -> Result<Option<Session>, AppError> {
         let mut con = self.redis.lock().await;
-        let session_key = format!("session:{}", session_id);
+        let session_key = format!("{}:{}", SESSION_KEY_PREFIX, session_id);
 
         let session_exists = con.exists::<_, bool>(&session_key).await.map_err(|e| Error::RedisOperationError(e.to_string()))?;
 
@@ -109,7 +110,7 @@ impl SessionService {
         user_role: &UserRole,
     ) -> Result<(), AppError> {
         let mut con = self.redis.lock().await;
-        let session_key = format!("session:{}", session_id);
+        let session_key = format!("{}:{}", SESSION_KEY_PREFIX, session_id);
 
         let redis_operations = [
             (USER_ID_KEY, user_id),

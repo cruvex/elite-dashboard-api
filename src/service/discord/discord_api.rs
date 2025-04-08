@@ -24,33 +24,37 @@ impl DiscordApiService {
         }
     }
 
-    pub async fn get_elite_guild(&self) -> Result<Guild, Error> {
+    pub async fn get_elite_guild(&self) -> Result<Option<Guild>, Error> {
         let url = self.api_url_for(&format!("guilds/{}", self.elite_guild_id));
         let guild = self.request::<Guild>(self.client.get(url)).await?;
 
         Ok(guild)
     }
 
-    pub async fn get_elite_guild_member(&self, user_id: &str) -> Result<Member, Error> {
+    pub async fn get_elite_guild_member(&self, user_id: &str) -> Result<Option<Member>, Error> {
         let url = self.api_url_for(&format!("guilds/{}/members/{}", self.elite_guild_id, user_id));
         let member = self.request::<Member>(self.client.get(url)).await?;
 
         Ok(member)
     }
 
-    async fn request<T: DeserializeOwned>(&self, request: RequestBuilder) -> Result<T, Error> {
+    async fn request<T: DeserializeOwned>(&self, request: RequestBuilder) -> Result<Option<T>, Error> {
         let response = request
             .header("Authorization", format!("Bot {}", self.bot_token))
             .send()
             .await
             .map_err(|e| DiscordApiRequestError(e.to_string()))?;
 
+        if response.status() == reqwest::StatusCode::NOT_FOUND {
+            return Ok(None);
+        }
+
         if !response.status().is_success() {
             debug!("Failed to get response: {:?}", response);
             return Err(DiscordApiRequestError(response.status().to_string()));
         }
 
-        response.json::<T>().await.map_err(|e| {
+        response.json::<T>().await.map(Some).map_err(|e| {
             debug!("Failed to deserialize response: {:?}", e);
             DiscordApiRequestError(e.to_string())
         })

@@ -20,6 +20,7 @@ pub enum Error {
     RedisOperationError(String),
 
     NotInElite,
+    NotInEliteGuild,
 }
 
 impl From<Error> for AppError {
@@ -35,6 +36,7 @@ impl From<Error> for AppError {
             Error::SessionNotFound => AppError::Unauthorized,
             Error::InvalidSession(_) => AppError::Unauthorized,
             Error::NotInElite => AppError::Unauthorized,
+            Error::NotInEliteGuild => AppError::Unauthorized,
         }
     }
 }
