@@ -1,6 +1,5 @@
 use crate::app::error::AppError;
 use crate::config::SessionConfig;
-use crate::db::redis::RedisConnection;
 use crate::model::session::{Session, UserRole};
 use crate::service::constant::{
     CSRF_TOKEN_KEY, DISCORD_ACCESS_TOKEN_KEY, DISCORD_REFRESH_TOKEN_KEY, FIVE_MINUTES, ONE_MONTH, SESSION_COOKIE, SESSION_KEY_PREFIX, USER_ID_KEY,
@@ -11,24 +10,24 @@ use hex::encode;
 use oauth2::basic::BasicTokenResponse;
 use oauth2::{CsrfToken, TokenResponse};
 use rand::RngCore;
+use redis::aio::ConnectionManager;
 use redis::{AsyncCommands, ErrorKind, ExpireOption};
 use std::sync::Arc;
 use time::{Duration, OffsetDateTime};
-use tokio::sync::Mutex;
 use tower_cookies::Cookie;
 use tower_cookies::cookie::SameSite;
 use tracing::debug;
 
 #[derive(Clone)]
 pub struct SessionService {
-    redis: Arc<Mutex<RedisConnection>>,
+    redis: Arc<ConnectionManager>,
     pub secure_cookie: bool,
 }
 
 impl SessionService {
-    pub fn new(session_config: &SessionConfig, redis: RedisConnection) -> Self {
+    pub fn new(session_config: &SessionConfig, redis: ConnectionManager) -> Self {
         Self {
-            redis: Arc::new(Mutex::new(redis)),
+            redis: Arc::new(redis),
             secure_cookie: session_config.secure_cookie,
         }
     }
@@ -36,7 +35,7 @@ impl SessionService {
 
 impl SessionService {
     pub async fn init_session(&self, csrf_token: &CsrfToken) -> Result<String, AppError> {
-        let mut con = self.redis.lock().await;
+        let mut con = self.redis.as_ref().clone();
 
         let session_id = self.generate_session_id();
         let session_key = format!("{}:{}", SESSION_KEY_PREFIX, session_id);
@@ -62,7 +61,7 @@ impl SessionService {
     }
 
     pub async fn validate_init_session(&self, session_id: &String, csrf_token: &CsrfToken) -> Result<(), AppError> {
-        let mut con = self.redis.lock().await;
+        let mut con = self.redis.as_ref().clone();
         let session_key = format!("{}:{}", SESSION_KEY_PREFIX, session_id);
 
         // Check if session exists with cookie session id and state csrf_token
@@ -74,7 +73,7 @@ impl SessionService {
     }
 
     pub async fn get_session_by_id(&self, session_id: &String) -> Result<Option<Session>, AppError> {
-        let mut con = self.redis.lock().await;
+        let mut con = self.redis.as_ref().clone();
         let session_key = format!("{}:{}", SESSION_KEY_PREFIX, session_id);
 
         let session_exists = con.exists::<_, bool>(&session_key).await.map_err(|e| Error::RedisOperationError(e.to_string()))?;
@@ -109,7 +108,7 @@ impl SessionService {
         user_id: &String,
         user_role: &UserRole,
     ) -> Result<(), AppError> {
-        let mut con = self.redis.lock().await;
+        let mut con = self.redis.as_ref().clone();
         let session_key = format!("{}:{}", SESSION_KEY_PREFIX, session_id);
 
         let redis_operations = [
