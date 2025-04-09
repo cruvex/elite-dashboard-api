@@ -14,13 +14,13 @@ pub struct ReqStamp {
     pub method: Method,
     pub uri: Uri,
     pub id: String,
-    pub origin: RequestOrigin,
+    pub platform: RequestPlatform,
     pub time_in: String,
     pub time_out: String,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum RequestOrigin {
+pub enum RequestPlatform {
     Local,
     Railway,
 }
@@ -29,9 +29,9 @@ pub async fn mw_req_log(uri: Uri, req_method: Method, req: Request<Body>, next: 
     trace!("{:<12} - mw_req_log", "MIDDLEWARE");
 
     let req_id_header = req.headers().get(RAILWAY_REQUEST_ID_HEADER);
-    let (req_id, origin) = match req_id_header {
-        Some(id) => (id.to_str().unwrap().to_string(), RequestOrigin::Railway),
-        None => (Uuid::new_v4().to_string(), RequestOrigin::Local),
+    let (req_id, platform) = match req_id_header {
+        Some(id) => (id.to_str().unwrap().to_string(), RequestPlatform::Railway),
+        None => (Uuid::new_v4().to_string(), RequestPlatform::Local),
     };
 
     let time_in = Utc::now();
@@ -44,7 +44,7 @@ pub async fn mw_req_log(uri: Uri, req_method: Method, req: Request<Body>, next: 
         method: req_method.clone(),
         uri: uri.clone(),
         id: req_id.clone(),
-        origin,
+        platform,
         time_in: time_in.to_rfc3339(),
         time_out: time_out.to_rfc3339(),
     };

@@ -1,6 +1,6 @@
 use crate::app::constants::LOCAL_REQUEST_ID_HEADER;
 use crate::app::error::AppError;
-use crate::web::middleware::mw_req_log::{ReqStamp, RequestOrigin};
+use crate::web::middleware::mw_req_log::{ReqStamp, RequestPlatform};
 use axum::response::Response;
 use tracing::{debug, trace};
 
@@ -17,7 +17,7 @@ pub async fn mw_response_map(mut res: Response) -> Response {
     debug!("{:<12} - Request info: {:?}", "RES_MAPPER", req_stamp);
 
     // insert request id into response headers if the request was local
-    if req_stamp.origin == RequestOrigin::Local {
+    if req_stamp.platform == RequestPlatform::Local {
         res.headers_mut().insert(LOCAL_REQUEST_ID_HEADER, req_stamp.id.parse().unwrap());
     }
 
