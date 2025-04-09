@@ -17,14 +17,16 @@ pub enum AppError {
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let (status, message) = match self {
-            AppError::_NotFound => (StatusCode::NOT_FOUND, "Resource Not Found"),
-            AppError::BadRequest => (StatusCode::BAD_REQUEST, "Bad Request"),
-            AppError::Unauthorized => (StatusCode::UNAUTHORIZED, "Unauthorized"),
-            AppError::InternalServerError => (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error"),
+            AppError::_NotFound => (StatusCode::NOT_FOUND, Some("Resource Not Found")),
+            AppError::BadRequest => (StatusCode::BAD_REQUEST, Some("Bad Request")),
+            AppError::Unauthorized => (StatusCode::UNAUTHORIZED, None),
+            AppError::InternalServerError => (StatusCode::INTERNAL_SERVER_ERROR, Some("Internal Server Error")),
         };
 
-        let body = json!({ "error": message });
-        let mut res = (status, Json(body)).into_response();
+        let mut res = match message {
+            Some(msg) => (status, Json(json!({ "error": msg }))).into_response(),
+            None => status.into_response(),
+        };
 
         // Put error in response for later use in response_mapper
         res.extensions_mut().insert(self);

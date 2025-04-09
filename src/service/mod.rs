@@ -1,4 +1,3 @@
-pub mod constant;
 mod discord;
 mod elite;
 mod error;

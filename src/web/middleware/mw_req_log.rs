@@ -1,5 +1,5 @@
+use crate::app::constants::RAILWAY_REQUEST_ID_HEADER;
 use crate::app::error::Result;
-use crate::service::constant::RAILWAY_REQUEST_ID_HEADER;
 use axum::body::Body;
 use axum::http::{Method, Request, Uri};
 use axum::middleware::Next;
@@ -14,9 +14,15 @@ pub struct ReqStamp {
     pub method: Method,
     pub uri: Uri,
     pub id: String,
-    pub origin: String,
+    pub origin: RequestOrigin,
     pub time_in: String,
     pub time_out: String,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum RequestOrigin {
+    Local,
+    Railway,
 }
 
 pub async fn mw_req_log(uri: Uri, req_method: Method, req: Request<Body>, next: Next) -> Result<Response> {
@@ -24,8 +30,8 @@ pub async fn mw_req_log(uri: Uri, req_method: Method, req: Request<Body>, next: 
 
     let req_id_header = req.headers().get(RAILWAY_REQUEST_ID_HEADER);
     let (req_id, origin) = match req_id_header {
-        Some(id) => (id.to_str().unwrap().to_string(), "railway"),
-        None => (Uuid::new_v4().to_string(), "local"),
+        Some(id) => (id.to_str().unwrap().to_string(), RequestOrigin::Railway),
+        None => (Uuid::new_v4().to_string(), RequestOrigin::Local),
     };
 
     let time_in = Utc::now();
@@ -38,7 +44,7 @@ pub async fn mw_req_log(uri: Uri, req_method: Method, req: Request<Body>, next: 
         method: req_method.clone(),
         uri: uri.clone(),
         id: req_id.clone(),
-        origin: origin.to_string(),
+        origin,
         time_in: time_in.to_rfc3339(),
         time_out: time_out.to_rfc3339(),
     };

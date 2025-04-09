@@ -1,4 +1,4 @@
-use crate::config::RedisConfig;
+use crate::app::config::RedisConfig;
 use redis::aio::ConnectionManager;
 use redis::{Client, RedisResult};
 

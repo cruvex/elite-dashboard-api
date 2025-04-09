@@ -1,5 +1,5 @@
+use crate::app::config::DiscordConfig;
 use crate::app::error::AppError;
-use crate::config::DiscordConfig;
 use crate::model::discord::User;
 use crate::model::session::UserRole;
 use crate::service::discord::error::Error;

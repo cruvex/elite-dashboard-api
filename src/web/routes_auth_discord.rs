@@ -10,8 +10,8 @@ use tower_cookies::Cookies;
 use tracing::{debug, warn};
 
 use crate::AppState;
+use crate::app::constants::{FIVE_MINUTES, ONE_MONTH, SESSION_COOKIE_NAME};
 use crate::app::error::Result;
-use crate::service::constant::{FIVE_MINUTES, ONE_MONTH, SESSION_COOKIE};
 use crate::service::{DiscordApiService, DiscordAuthService, SessionService};
 use crate::web::error::Error;
 
@@ -69,7 +69,7 @@ pub async fn auth_discord_callback(
     let code = params.code.ok_or(Error::NoCodeInDiscordCallbackPath)?;
     let state = params.state.ok_or(Error::NoStateInDiscordCallbackPath)?;
 
-    let session_cookie = cookies.get(SESSION_COOKIE).ok_or(Error::SessionCookieNotFound)?;
+    let session_cookie = cookies.get(SESSION_COOKIE_NAME).ok_or(Error::SessionCookieNotFound)?;
     let session_id = session_cookie.value().to_string();
 
     debug!("{:<12} - Session ID: {:?}", "HANDLER", &session_id);
@@ -112,7 +112,7 @@ fn handle_callback_error(error: &Option<String>, error_description: &Option<Stri
 async fn render_callback_response() -> Result<Html<String>> {
     let fallback = generate_fallback_html();
 
-    match fs::read_to_string("auth-redirect.html").await {
+    match fs::read_to_string("src/web/html/auth-redirect.html").await {
         Ok(contents) => Ok(Html(contents)),
         Err(err) => {
             debug!("Failed to read 'auth-redirect.html': {}", err);

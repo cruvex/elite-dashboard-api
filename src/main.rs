@@ -1,12 +1,11 @@
 mod app;
-mod config;
 mod db;
 mod error;
 mod model;
 mod service;
 mod web;
 
-use crate::config::AppConfig;
+use app::config::AppConfig;
 use axum::http::Method;
 use axum::http::header::{AUTHORIZATION, CONTENT_TYPE};
 use axum::routing::get;

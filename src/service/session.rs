@@ -1,10 +1,10 @@
-use crate::app::error::AppError;
-use crate::config::SessionConfig;
-use crate::model::session::{Session, UserRole};
-use crate::service::constant::{
-    CSRF_TOKEN_KEY, DISCORD_ACCESS_TOKEN_KEY, DISCORD_REFRESH_TOKEN_KEY, FIVE_MINUTES, ONE_MONTH, SESSION_COOKIE, SESSION_KEY_PREFIX, USER_ID_KEY,
-    USER_ROLE_KEY,
+use crate::app::config::SessionConfig;
+use crate::app::constants::{
+    CSRF_TOKEN_KEY, DISCORD_ACCESS_TOKEN_KEY, DISCORD_REFRESH_TOKEN_KEY, FIVE_MINUTES, ONE_MONTH, SESSION_COOKIE_NAME, SESSION_KEY_PREFIX,
+    USER_ID_KEY, USER_ROLE_KEY,
 };
+use crate::app::error::AppError;
+use crate::model::session::{Session, UserRole};
 use crate::web::error::Error;
 use hex::encode;
 use oauth2::basic::BasicTokenResponse;
@@ -91,7 +91,7 @@ impl SessionService {
     }
 
     pub fn create_session_cookie(&self, session_id: String, expires_in: i64) -> Cookie<'static> {
-        Cookie::build((SESSION_COOKIE, session_id))
+        Cookie::build((SESSION_COOKIE_NAME, session_id))
             .path("/")
             .secure(self.secure_cookie)
             .http_only(true)

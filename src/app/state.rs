@@ -1,4 +1,4 @@
-use crate::config::AppConfig;
+use crate::app::config::AppConfig;
 use crate::error::Error;
 use crate::service::{DiscordApiService, DiscordAuthService, EliteService, SessionService};
 use axum::extract::FromRef;

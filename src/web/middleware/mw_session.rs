@@ -11,10 +11,10 @@ use tracing::{debug, trace};
 
 use crate::web::error::Error;
 
+use crate::app::constants::SESSION_COOKIE_NAME;
 use crate::app::error::{AppError, Result};
 use crate::model::session::Session;
 use crate::service::SessionService;
-use crate::service::constant::SESSION_COOKIE;
 
 pub async fn mw_session_require(
     cookies: Cookies,
@@ -24,7 +24,7 @@ pub async fn mw_session_require(
 ) -> Result<Response> {
     trace!("{:<12} - mw_session_require", "MIDDLEWARE");
 
-    let session = cookies.get(SESSION_COOKIE).ok_or(Error::SessionCookieNotFound)?;
+    let session = cookies.get(SESSION_COOKIE_NAME).ok_or(Error::SessionCookieNotFound)?;
     let session_id = session.value().to_string();
 
     let session = session_store.validate_session(&session_id).await?;

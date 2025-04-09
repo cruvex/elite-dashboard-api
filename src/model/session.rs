@@ -1,4 +1,4 @@
-use crate::service::constant::{DISCORD_ACCESS_TOKEN_KEY, DISCORD_REFRESH_TOKEN_KEY, USER_ID_KEY, USER_ROLE_KEY};
+use crate::app::constants::{DISCORD_ACCESS_TOKEN_KEY, DISCORD_REFRESH_TOKEN_KEY, USER_ID_KEY, USER_ROLE_KEY};
 use redis::{FromRedisValue, RedisError, RedisResult, Value};
 use serde::Serialize;
 use std::collections::HashMap;

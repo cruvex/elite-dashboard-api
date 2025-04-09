@@ -1,4 +1,4 @@
-use crate::config::DiscordConfig;
+use crate::app::config::DiscordConfig;
 use crate::model::discord::{Guild, Member};
 use crate::service::discord::error::Error;
 use crate::service::discord::error::Error::DiscordApiRequestError;
