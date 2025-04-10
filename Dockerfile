@@ -8,6 +8,7 @@ RUN rustup target add x86_64-unknown-linux-musl && \
     update-ca-certificates
 
 COPY ./src ./src
+COPY ./migrations ./migrations
 COPY ./Cargo.lock .
 COPY ./Cargo.toml .
 

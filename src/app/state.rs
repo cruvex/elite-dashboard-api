@@ -3,6 +3,8 @@ use crate::error::Error;
 use crate::service::{DiscordApiService, DiscordAuthService, EliteService, SessionService};
 use axum::extract::FromRef;
 use axum_macros::FromRef;
+use deadpool_postgres::Pool;
+use redis::aio::ConnectionManager;
 
 #[derive(Clone, FromRef)]
 pub struct AppState {
@@ -31,10 +33,7 @@ impl FromRef<AppState> for DiscordApiService {
 
 impl AppState {
     /// Initialize the application state with all required services.
-    pub async fn initialize(config: &AppConfig) -> Result<Self, Error> {
-        let redis = crate::db::redis::init_redis(&config.redis).await.expect("Failed to init Redis");
-        let db_pool = crate::db::init_db(&config.database).await.expect("Failed to initialize database pool");
-
+    pub async fn initialize(db_pool: Pool, redis: ConnectionManager, config: &AppConfig) -> Result<Self, Error> {
         let session = SessionService::new(&config.session, redis);
 
         let elite = EliteService::new(db_pool.clone());

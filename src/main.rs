@@ -24,7 +24,12 @@ async fn main() {
 
     let config = AppConfig::from_env().expect("Failed to load configuration");
 
-    let state = AppState::initialize(&config).await.expect("Failed to initialize app state");
+    let db_pool = db::init_db(&config.database).await.expect("Failed to initialize database pool");
+    db::run_migrations(db_pool.clone()).await.expect("Failed to run database migrations");
+
+    let redis = db::init_redis(&config.redis).await.expect("Failed to initialize Redis");
+
+    let state = AppState::initialize(db_pool.clone(), redis, &config).await.expect("Failed to initialize app state");
 
     let routes_api =
         web::routes_discord_api::routes(state.clone())
