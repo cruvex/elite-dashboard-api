@@ -18,6 +18,7 @@ use crate::web::error::Error;
 pub fn routes(state: AppState) -> Router {
     Router::new()
         .route("/auth/discord", get(auth_discord))
+        .route("/auth/logout", get(auth_logout))
         .route("/auth/discord/callback", get(auth_discord_callback))
         .with_state(state)
 }
@@ -41,6 +42,19 @@ pub async fn auth_discord(
     Ok(Json(json!({
         "url": auth_url
     })))
+}
+
+pub async fn auth_logout(State(session_store): State<SessionService>, cookies: Cookies) -> Result<()> {
+    debug!("{:<12} - {}", "HANDLER", "auth_logout");
+
+    let session_cookie = cookies.get(SESSION_COOKIE_NAME).ok_or(Error::SessionCookieNotFound)?;
+    let session_id = session_cookie.value().to_string();
+
+    session_store.invalidate_session(&session_id).await?;
+
+    cookies.remove(session_store.create_session_cookie(session_id, 0));
+
+    Ok(())
 }
 
 #[derive(Debug, Deserialize)]

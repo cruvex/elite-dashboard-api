@@ -71,6 +71,15 @@ impl SessionService {
         }
     }
 
+    pub async fn invalidate_session(&self, session_id: &String) -> Result<(), AppError> {
+        let mut con = self.redis.as_ref().clone();
+        let session_key = format!("{}:{}", SESSION_KEY_PREFIX, session_id);
+
+        let _: () = con.del::<_, ()>(&session_key).await.map_err(|e| Error::RedisOperationError(e.to_string()))?;
+
+        Ok(())
+    }
+
     pub async fn get_session_by_id(&self, session_id: &String) -> Result<Option<Session>, AppError> {
         let mut con = self.redis.as_ref().clone();
         let session_key = format!("{}:{}", SESSION_KEY_PREFIX, session_id);
