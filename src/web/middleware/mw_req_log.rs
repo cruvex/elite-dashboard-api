@@ -5,21 +5,23 @@ use axum::http::{Method, Request, Uri};
 use axum::middleware::Next;
 use axum::response::Response;
 use chrono::Utc;
+use serde::Serialize;
 use tracing::trace;
 use uuid::Uuid;
+use valuable::Valuable;
 
-#[derive(Debug, Clone)]
-#[allow(dead_code)]
+#[derive(Debug, Clone, Serialize, Valuable)]
+#[allow(dead_code)] // FIXME
 pub struct ReqStamp {
-    pub method: Method,
-    pub uri: Uri,
+    pub method: String,
+    pub uri: String,
     pub id: String,
     pub platform: RequestPlatform,
     pub time_in: String,
     pub time_out: String,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Valuable)]
 pub enum RequestPlatform {
     Local,
     Railway,
@@ -41,8 +43,8 @@ pub async fn mw_req_log(uri: Uri, req_method: Method, req: Request<Body>, next: 
     let time_out = Utc::now();
 
     let req_stamp = ReqStamp {
-        method: req_method.clone(),
-        uri: uri.clone(),
+        method: req_method.to_string(),
+        uri: uri.to_string(),
         id: req_id.clone(),
         platform,
         time_in: time_in.to_rfc3339(),

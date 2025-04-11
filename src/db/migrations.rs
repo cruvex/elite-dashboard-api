@@ -3,7 +3,7 @@ use crate::db::error::DbError;
 use deadpool_postgres::Pool;
 use refinery::embed_migrations;
 use std::ops::DerefMut;
-use tracing::info;
+use tracing::{debug, info};
 
 embed_migrations!("./migrations");
 
@@ -15,22 +15,18 @@ pub async fn run_migrations(db_pool: Pool) -> Result<(), AppError> {
 
     let report = migrations::runner()
         .set_grouped(true)
-        .set_abort_missing(true)
+        .set_abort_missing(false)
         .run_async(client)
         .await
         .map_err(|e| DbError::MigrationError(e.to_string()))?;
 
     if report.applied_migrations().is_empty() {
-        info!("");
         info!("No new migrations to apply");
-        info!("");
     } else {
         report.applied_migrations().iter().for_each(|migration| {
-            info!("Successfully applied migration: {}", migration.name());
+            debug!("Successfully applied migration: {}", migration.name());
         });
-        info!("");
         info!("Successfully applied {} migration(s)", report.applied_migrations().len());
-        info!("");
     }
 
     Ok(())

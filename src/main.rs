@@ -5,6 +5,7 @@ mod model;
 mod service;
 mod web;
 
+use crate::app::state::AppState;
 use app::config::AppConfig;
 use axum::http::Method;
 use axum::http::header::{AUTHORIZATION, CONTENT_TYPE};
@@ -14,13 +15,11 @@ use tokio::signal;
 use tower_cookies::CookieManagerLayer;
 use tower_http::cors::CorsLayer;
 use tracing::info;
-use tracing_subscriber::EnvFilter;
-
-use crate::app::state::AppState;
+use tracing::log::debug;
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt().with_target(false).with_env_filter(EnvFilter::from_default_env()).init();
+    app::tracing::init_tracing().expect("Failed to initialize tracing");
 
     let config = AppConfig::from_env().expect("Failed to load configuration");
 
@@ -63,12 +62,10 @@ async fn main() {
     let listener_url = format!("{}:{}", &config.server.address, &config.server.port);
     let listener = tokio::net::TcpListener::bind(&listener_url).await.unwrap();
 
-    info!("{:<12} - {:?}\n", "LISTENING", listener.local_addr());
+    info!("{:<12} - {:?}", "LISTENING", listener.local_addr());
+    debug!("");
 
-    axum::serve(listener, routes_all.into_make_service())
-        .with_graceful_shutdown(shutdown_signal())
-        .await
-        .expect("Failed to start server");
+    axum::serve(listener, routes_all).with_graceful_shutdown(shutdown_signal()).await.expect("Failed to start server");
 }
 
 async fn shutdown_signal() {

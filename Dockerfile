@@ -12,12 +12,14 @@ COPY ./migrations ./migrations
 COPY ./Cargo.lock .
 COPY ./Cargo.toml .
 
+ENV RUSTFLAGS="--cfg tracing_unstable"
+
 RUN cargo build --target x86_64-unknown-linux-musl --release
 
 FROM scratch
 
 COPY --from=build /app/target/x86_64-unknown-linux-musl/release/elite-dashboard-api /app
 
-EXPOSE 8089
+EXPOSE 8080
 
 ENTRYPOINT ["/app"]
