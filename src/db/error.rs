@@ -4,16 +4,16 @@ use tracing::trace;
 #[derive(Debug)]
 pub enum DbError {
     ConnectionError,
-    #[allow(dead_code)]
+    #[allow(dead_code)] // FIXME
     QueryError(String),
-    #[allow(dead_code)]
+    #[allow(dead_code)] // FIXME
     MigrationError(String),
 }
 
-#[allow(dead_code)]
+#[allow(dead_code)] // FIXME
 pub enum RedisError {
     ConnectionError,
-    #[allow(dead_code)]
+    #[allow(dead_code)] // FIXME
     OperationError(String),
 }
 

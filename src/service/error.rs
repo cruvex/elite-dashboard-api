@@ -4,7 +4,7 @@ use tracing::trace;
 #[derive(Debug)]
 pub enum ServiceError {
     DbConnectionError,
-    #[allow(dead_code)]
+    #[allow(dead_code)] // FIXME
     CreatePreparedStatementError(String),
 }
 

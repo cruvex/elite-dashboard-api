@@ -4,7 +4,7 @@ use tracing::debug;
 
 #[derive(Clone, Debug)]
 pub enum Error {
-    #[allow(dead_code)]
+    #[allow(dead_code)] // FIXME
     DiscordApiRequestError(String),
 }
 
