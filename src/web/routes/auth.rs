@@ -34,7 +34,7 @@ pub async fn auth_discord(
     let session_id = session.init_session(&csrf_token).await?;
 
     // Create and set session cookie
-    // User has to complete initial auth flow within 5 minutes. When auth flow succeeds session cookie expiration will be increased
+    // User has to complete initial auth flow within 5 minutes. When auth flow succeeds, session cookie expiration will be increased
     let session_cookie = session.create_session_cookie(session_id.clone(), FIVE_MINUTES);
     cookies.add(session_cookie);
 
@@ -47,12 +47,15 @@ pub async fn auth_discord(
 pub async fn auth_logout(State(session_store): State<SessionService>, cookies: Cookies) -> Result<()> {
     debug!("{:<12} - {}", "HANDLER", "auth_logout");
 
-    let session_cookie = cookies.get(SESSION_COOKIE_NAME).ok_or(Error::SessionCookieNotFound)?;
-    let session_id = session_cookie.value().to_string();
+    let session_cookie = cookies.get(SESSION_COOKIE_NAME);
 
-    session_store.invalidate_session(&session_id).await?;
+    if let Some(session_cookie) = session_cookie {
+        let session_id = session_cookie.value().to_string();
 
-    cookies.remove(session_store.create_session_cookie(session_id, 0));
+        session_store.invalidate_session(&session_id).await?;
+
+        cookies.remove(session_store.create_session_cookie(session_id, 0));
+    }
 
     Ok(())
 }
@@ -126,7 +129,7 @@ fn handle_callback_error(error: &Option<String>, error_description: &Option<Stri
 async fn render_callback_response() -> Result<Html<String>> {
     let fallback = generate_fallback_html();
 
-    match fs::read_to_string("src/web/html/auth-redirect.html").await {
+    match fs::read_to_string("../html/auth-redirect.html").await {
         Ok(contents) => Ok(Html(contents)),
         Err(err) => {
             debug!("Failed to read 'auth-redirect.html': {}", err);
