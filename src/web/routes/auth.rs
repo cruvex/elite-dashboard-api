@@ -1,6 +1,6 @@
 use axum::extract::{Query, State};
 use axum::response::Html;
-use axum::routing::get;
+use axum::routing::{delete, get};
 use axum::{Json, Router};
 use oauth2::{CsrfToken, TokenResponse};
 use serde::Deserialize;
@@ -18,7 +18,7 @@ use crate::web::error::Error;
 pub fn routes(state: AppState) -> Router {
     Router::new()
         .route("/auth/discord", get(auth_discord))
-        .route("/auth/logout", get(auth_logout))
+        .route("/auth/logout", delete(auth_logout))
         .route("/auth/discord/callback", get(auth_discord_callback))
         .with_state(state)
 }
