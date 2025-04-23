@@ -19,13 +19,15 @@ impl EliteService {
         let con = self.db_pool.get().await.map_err(|_| DbConnectionError)?;
 
         let stmt = con
-            .prepare_cached("SELECT * FROM elites WHERE discord_user_id = $1")
+            .prepare_cached("SELECT * FROM elites_with_ign WHERE discord_user_id = $1 AND status = ANY($2)")
             .await
             .map_err(|e| CreatePreparedStatementError(e.to_string()))?;
 
-        let elite_opt = con.query_opt(&stmt, &[discord_id]).await.map_err(|_| DbConnectionError)?.map(Elite::from);
-
-        // let elite = row_opt.map(Elite::from);
+        let elite_opt = con
+            .query_opt(&stmt, &[discord_id, &vec!["staff", "veteran", "elite", "trial"]])
+            .await
+            .map_err(|_| DbConnectionError)?
+            .map(Elite::from);
 
         Ok(elite_opt)
     }
