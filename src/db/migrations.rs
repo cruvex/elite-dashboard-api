@@ -15,7 +15,7 @@ pub async fn run_migrations(db_pool: Pool) -> Result<(), AppError> {
 
     let report = migrations::runner()
         .set_grouped(true)
-        .set_abort_missing(false)
+        .set_abort_missing(true)
         .run_async(client)
         .await
         .map_err(|e| DbError::MigrationError(e.to_string()))?;
