@@ -1,4 +1,3 @@
-use crate::app::error::AppError;
 use crate::db::error::DbError;
 use deadpool_postgres::Pool;
 use refinery::embed_migrations;
@@ -7,7 +6,7 @@ use tracing::{debug, info};
 
 embed_migrations!("./migrations");
 
-pub async fn run_migrations(db_pool: Pool) -> Result<(), AppError> {
+pub async fn run_migrations(db_pool: Pool) -> Result<(), DbError> {
     let mut conn = db_pool.get().await.map_err(|_| DbError::ConnectionError)?;
     let client = conn.deref_mut().deref_mut();
 
