@@ -1,4 +1,4 @@
-CREATE VIEW elites_with_ign AS
+CREATE OR REPLACE VIEW elites_with_ign AS
 SELECT e.*, nh.ign
 FROM elites e
 LEFT JOIN LATERAL (
