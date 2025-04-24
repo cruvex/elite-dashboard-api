@@ -12,8 +12,6 @@ COPY ./migrations ./migrations
 COPY ./Cargo.lock .
 COPY ./Cargo.toml .
 
-ENV RUSTFLAGS="--cfg tracing_unstable"
-
 RUN cargo build --target x86_64-unknown-linux-musl --release
 
 FROM scratch

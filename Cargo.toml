@@ -26,10 +26,9 @@ tokio-postgres = { version = "0.7.13", features = ["with-uuid-1", "with-chrono-0
 tower-cookies = "0.11.0"
 tower-http = { version = "0.6.2", features = ["fs", "cors"] }
 tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.19", features = ["env-filter", "json", "valuable"] }
+tracing-subscriber = { version = "0.3.19", features = ["env-filter", "json"] }
 url = "2.5.4"
 uuid = { version = "1.16.0", features = ["v4", "serde"] }
-valuable = { version = "0.1.1", features = ["derive"] }
 
 [profile.release]
 debug = false

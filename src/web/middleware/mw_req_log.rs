@@ -1,16 +1,16 @@
 use crate::app::constants::RAILWAY_REQUEST_ID_HEADER;
-use crate::app::error::Result;
+use crate::app::error::AppError;
 use axum::body::Body;
 use axum::http::{Method, Request, Uri};
 use axum::middleware::Next;
 use axum::response::Response;
 use chrono::Utc;
 use serde::Serialize;
+use strum_macros::{Display, EnumString};
 use tracing::trace;
 use uuid::Uuid;
-use valuable::Valuable;
 
-#[derive(Debug, Clone, Serialize, Valuable)]
+#[derive(Debug, Clone, Serialize)]
 #[allow(dead_code)] // FIXME
 pub struct ReqStamp {
     pub method: String,
@@ -21,13 +21,15 @@ pub struct ReqStamp {
     pub time_out: String,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Valuable)]
+#[derive(Clone, Debug, Serialize, Display, PartialEq, EnumString)]
 pub enum RequestPlatform {
+    #[strum(serialize = "local")]
     Local,
+    #[strum(serialize = "railway")]
     Railway,
 }
 
-pub async fn mw_req_log(uri: Uri, req_method: Method, req: Request<Body>, next: Next) -> Result<Response> {
+pub async fn mw_req_log(uri: Uri, req_method: Method, req: Request<Body>, next: Next) -> Result<Response, AppError> {
     trace!("{:<12} - mw_req_log", "MIDDLEWARE");
 
     let req_id_header = req.headers().get(RAILWAY_REQUEST_ID_HEADER);
