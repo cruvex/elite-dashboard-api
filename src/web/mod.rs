@@ -17,9 +17,14 @@ pub fn app_router(state: AppState) -> Router {
         .allow_headers([CONTENT_TYPE])
         .allow_credentials(true);
 
-    let authenticated_routes = Router::new().merge(routes::elite::routes(state.clone())).merge(routes::discord::routes(state.clone())).layer(
-        axum::middleware::from_fn_with_state(state.clone(), middleware::mw_session::mw_session_require),
-    );
+    let authenticated_routes = Router::new()
+        .merge(routes::elite::routes(state.clone()))
+        .merge(routes::discord::routes(state.clone()))
+        .merge(routes::ign_history::routes(state.clone()))
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            middleware::mw_session::mw_session_require,
+        ));
 
     Router::new()
         .merge(authenticated_routes)

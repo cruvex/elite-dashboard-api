@@ -1,7 +1,7 @@
 #![allow(clippy::module_inception)]
 
 pub mod db;
-mod error;
+pub mod error;
 mod migrations;
 pub mod redis;
 

@@ -21,6 +21,7 @@ pub enum Error {
 
     NotInElite,
     NotInEliteGuild,
+    StaffOnly,
 }
 
 impl From<Error> for AppError {
@@ -37,6 +38,7 @@ impl From<Error> for AppError {
             Error::InvalidSession(_) => AppError::Unauthorized,
             Error::NotInElite => AppError::Unauthorized,
             Error::NotInEliteGuild => AppError::Unauthorized,
+            Error::StaffOnly => AppError::Unauthorized,
         }
     }
 }

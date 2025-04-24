@@ -1,6 +1,6 @@
 use crate::app::config::AppConfig;
 use crate::error::Error;
-use crate::service::{DiscordApiService, DiscordAuthService, EliteService, SessionService};
+use crate::service::{DiscordApiService, DiscordAuthService, EliteService, IgnTrackerService, SessionService};
 use axum::extract::FromRef;
 use axum_macros::FromRef;
 use deadpool_postgres::Pool;
@@ -11,6 +11,7 @@ pub struct AppState {
     pub discord: DiscordState,
     pub session: SessionService,
     pub elite: EliteService,
+    pub ign_tracker: IgnTrackerService,
 }
 
 #[derive(Clone, FromRef)]
@@ -41,6 +42,8 @@ impl AppState {
         let discord_api = DiscordApiService::new(&config.discord);
         let discord_auth = DiscordAuthService::new(&config.discord);
 
+        let ign_tracker = IgnTrackerService::new(db_pool.clone());
+
         Ok(Self {
             discord: DiscordState {
                 api: discord_api,
@@ -48,6 +51,7 @@ impl AppState {
             },
             session,
             elite,
+            ign_tracker,
         })
     }
 }

@@ -16,6 +16,12 @@ pub struct SessionUser {
     pub role: UserRole,
 }
 
+impl SessionUser {
+    pub fn is_staff(&self) -> bool {
+        matches!(self.role, UserRole::Staff)
+    }
+}
+
 #[derive(Debug, Serialize, Clone)]
 pub struct DiscordTokens {
     pub access_token: Option<String>,
