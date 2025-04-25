@@ -11,7 +11,6 @@ use tracing::trace;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize)]
-#[allow(dead_code)] // FIXME
 pub struct ReqStamp {
     pub method: String,
     pub uri: String,
