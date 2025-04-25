@@ -8,8 +8,7 @@ mod web;
 use app::config::AppConfig;
 use app::state::AppState;
 use tokio::signal;
-use tracing::info;
-use tracing::log::debug;
+use tracing::{debug, info};
 
 #[tokio::main]
 async fn main() {
