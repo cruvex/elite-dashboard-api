@@ -10,10 +10,10 @@ use serde_json::{Value, json};
 use tracing::debug;
 
 pub fn routes(state: AppState) -> Router {
-    Router::new().route("/elite/@me", get(elite_me)).with_state(state)
+    Router::new().route("/elites/@me", get(elites_me)).with_state(state)
 }
 
-async fn elite_me(session: Session, State(elite): State<EliteService>) -> Result<Json<Value>, AppError> {
+async fn elites_me(session: Session, State(elite): State<EliteService>) -> Result<Json<Value>, AppError> {
     debug!("{}", session.user.id);
 
     let elite = elite.find_by_discord_id(&session.user.id).await?.ok_or(Error::NotInElite)?;
