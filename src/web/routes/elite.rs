@@ -38,13 +38,7 @@ async fn elites(session: Session, State(elite): State<EliteService>, Query(param
     debug!("{:<12} - {} | includeExElites={}", "HANDLER", "elites", include_ex_elites);
 
     let statuses = if include_ex_elites && session.user.is_staff() {
-        vec![
-            EliteStatus::Staff,
-            EliteStatus::Veteran,
-            EliteStatus::Elite,
-            EliteStatus::Trial,
-            EliteStatus::None,
-        ]
+        vec![EliteStatus::Staff, EliteStatus::Veteran, EliteStatus::Elite, EliteStatus::Trial, EliteStatus::None]
     } else {
         vec![EliteStatus::Staff, EliteStatus::Veteran, EliteStatus::Elite, EliteStatus::Trial]
     };
