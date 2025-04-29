@@ -51,19 +51,14 @@ impl SessionService {
     }
 
     pub async fn validate_session(&self, session_id: &String) -> Result<Session, AppError> {
-        let session = self.get_session_by_id(session_id).await?;
-
-        match session {
-            Some(session) => Ok(session),
-            None => Err(Error::SessionNotFound.into()),
-        }
+        self.get_session_by_id(session_id).await?.ok_or(Error::SessionNotFound.into())
     }
 
     pub async fn validate_init_session(&self, session_id: &String, csrf_token: &CsrfToken) -> Result<(), AppError> {
         let mut con = self.redis.as_ref().clone();
         let session_key = format!("{}:{}", SESSION_KEY_PREFIX, session_id);
 
-        // Check if session exists with cookie session id and state csrf_token
+        // Check if the session exists with cookie session id and state csrf_token
         match con.hget::<_, _, Option<String>>(&session_key, CSRF_TOKEN_KEY).await {
             Ok(Some(token)) if token.as_str() == csrf_token.secret() => Ok(()),
             Ok(_) => Err(Error::SessionNotFound.into()),
@@ -76,6 +71,15 @@ impl SessionService {
         let session_key = format!("{}:{}", SESSION_KEY_PREFIX, session_id);
 
         let _: () = con.del::<_, ()>(&session_key).await.map_err(|e| Error::RedisOperationError(e.to_string()))?;
+
+        Ok(())
+    }
+
+    pub async fn refresh_session_ttl(&self, session_id: &str) -> Result<(), AppError> {
+        let mut con = self.redis.as_ref().clone();
+        let session_key = format!("{}:{}", SESSION_KEY_PREFIX, session_id);
+
+        let _: () = con.expire(&session_key, ONE_MONTH).await.map_err(|e| Error::RedisOperationError(e.to_string()))?;
 
         Ok(())
     }

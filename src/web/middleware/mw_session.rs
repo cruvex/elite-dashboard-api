@@ -31,6 +31,12 @@ pub async fn mw_session_require(
 
     debug!("{:<12} - Valid session", "MIDDLEWARE");
 
+    // If requesting current session user refresh session ttl
+    if req.uri().path() == "/elites/@me" {
+        debug!("{:<12} - Refreshing session", "MIDDLEWARE");
+        session_store.refresh_session_ttl(&session_id).await?
+    }
+
     req.extensions_mut().insert(session.clone());
 
     Ok(next.run(req).await)
