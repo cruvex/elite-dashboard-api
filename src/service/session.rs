@@ -51,7 +51,9 @@ impl SessionService {
     }
 
     pub async fn validate_session(&self, session_id: &String) -> Result<Session, AppError> {
-        self.get_session_by_id(session_id).await?.ok_or(Error::SessionNotFound.into())
+        let session = self.get_session_by_id(session_id).await?.ok_or(Error::SessionNotFound)?;
+
+        Ok(session)
     }
 
     pub async fn validate_init_session(&self, session_id: &String, csrf_token: &CsrfToken) -> Result<(), AppError> {
