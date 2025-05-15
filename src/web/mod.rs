@@ -12,7 +12,7 @@ pub mod routes;
 
 pub fn app_router(state: AppState) -> Router {
     let cors = CorsLayer::new()
-        .allow_methods([Method::GET, Method::POST, Method::DELETE, Method::OPTIONS])
+        .allow_methods([Method::GET, Method::POST, Method::PATCH, Method::DELETE, Method::OPTIONS])
         .allow_origin(["http://192.168.1.38:5173".parse().unwrap()])
         .allow_headers([CONTENT_TYPE])
         .allow_credentials(true);

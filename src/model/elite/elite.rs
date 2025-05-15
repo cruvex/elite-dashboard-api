@@ -1,5 +1,5 @@
 use chrono::NaiveDate;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::error::Error;
 use strum_macros::EnumString;
 use tokio_postgres::Row;
@@ -19,6 +19,16 @@ pub struct Elite {
     pub birthday: Option<NaiveDate>,
 }
 
+// TODO - maybe implement a custom `FromRequest` trait for this struct or something - especially for `status` validation & invalid/unknown fields
+#[derive(Deserialize, Debug)]
+pub struct EliteForUpdate {
+    pub minecraft_uuid: Option<Uuid>,
+    pub discord_user_id: Option<String>,
+    pub status: Option<EliteStatus>,
+    pub country_code: Option<String>,
+    pub birthday: Option<NaiveDate>,
+}
+
 impl From<&Row> for Elite {
     fn from(row: &Row) -> Self {
         Self {
@@ -34,7 +44,7 @@ impl From<&Row> for Elite {
     }
 }
 
-#[derive(Debug, Serialize, EnumString)]
+#[derive(Debug, Serialize, Deserialize, EnumString)]
 #[serde(rename_all = "lowercase")]
 pub enum EliteStatus {
     #[strum(serialize = "staff")]

@@ -21,6 +21,7 @@ pub enum Error {
 
     NotInElite,
     NotInEliteGuild,
+    EliteNotFound(String),
     StaffOnly,
 }
 
@@ -29,8 +30,8 @@ impl From<Error> for AppError {
         trace!("{:<12} - {value:?}", "FROM_APP_ERR");
 
         match value {
-            Error::NoCodeInDiscordCallbackPath => AppError::BadRequest,
-            Error::NoStateInDiscordCallbackPath => AppError::BadRequest,
+            Error::NoCodeInDiscordCallbackPath => AppError::BadRequest(None),
+            Error::NoStateInDiscordCallbackPath => AppError::BadRequest(None),
             Error::DiscordApiError(_) => AppError::InternalServerError,
             Error::RedisOperationError(_) => AppError::InternalServerError,
             Error::SessionCookieNotFound => AppError::Unauthorized,
@@ -38,6 +39,7 @@ impl From<Error> for AppError {
             Error::InvalidSession(_) => AppError::Unauthorized,
             Error::NotInElite => AppError::Unauthorized,
             Error::NotInEliteGuild => AppError::Unauthorized,
+            Error::EliteNotFound(msg) => AppError::NotFound(Some(msg)),
             Error::StaffOnly => AppError::Unauthorized,
         }
     }
