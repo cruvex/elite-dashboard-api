@@ -21,6 +21,7 @@ pub fn app_router(state: AppState) -> Router {
         .merge(routes::elite::routes(state.clone()))
         .merge(routes::discord::routes(state.clone()))
         .merge(routes::ign_history::routes(state.clone()))
+        .nest("/dashboard", routes::dashboard::routes(state.clone()))
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),
             middleware::mw_session::mw_session_require,

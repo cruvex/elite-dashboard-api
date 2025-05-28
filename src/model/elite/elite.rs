@@ -44,7 +44,7 @@ impl From<&Row> for Elite {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, EnumString)]
+#[derive(Debug, Serialize, Deserialize, EnumString, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum EliteStatus {
     #[strum(serialize = "staff")]
